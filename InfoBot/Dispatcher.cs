@@ -13,14 +13,14 @@ namespace InfoBot
 
         public Dispatcher()
         {
-            Queue = new Queue<Action>();
+            Queue = new Queue<Func<Task>>();
         }
 
         #endregion Public Constructors
 
         #region Private Properties
 
-        private Queue<Action> Queue { get; set; }
+        private Queue<Func<Task>> Queue { get; set; }
 
         #endregion Private Properties
 
@@ -30,9 +30,9 @@ namespace InfoBot
         /// Execute on the main loop the command.
         /// </summary>
         /// <param name="action">Command to execute</param>
-        public void Execute(Action action) => Queue.Enqueue(action);
+        public void Execute(Func<Task> action) => Queue.Enqueue(action);
 
-        public Action GetNext() => Queue.Count > 0 ? Queue.Dequeue() : null;
+        public Func<Task> GetNext() => Queue.Count > 0 ? Queue.Dequeue() : null;
 
         #endregion Public Methods
     }

@@ -3,33 +3,137 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using DSharpPlus;
+using DSharpPlus.Entities;
 
 namespace InfoBot
 {
+    internal struct Save
+    {
+        #region Public Fields
+
+        public Vote[] votes;
+
+        #endregion Public Fields
+    }
+
+    internal struct SpecialMessage
+    {
+        #region Public Fields
+
+        public ulong channel;
+        public ulong id;
+
+        #endregion Public Fields
+    }
+
+    internal struct Vote
+    {
+        #region Public Fields
+
+        public TimeSpan duration;
+        public SpecialMessage message;
+
+        #endregion Public Fields
+    }
+
+    internal class DynamicMessage
+    {
+        #region Public Properties
+
+        public TimeSpan Lifetime { get; set; }
+        public DiscordMessage Message { get; set; }
+
+        #endregion Public Properties
+    }
+
     partial class Program
     {
+        #region Public Properties
+
+        public static DiscordEmoji Downvote { get; set; }
+        public static DiscordEmoji Upvote { get; set; }
+
+        #endregion Public Properties
+
+        #region Private Properties
+
+        private static List<DynamicMessage> Votes { get; set; }
+
+        #endregion Private Properties
+
         #region Private Methods
 
         private static void InitCommands()
         {
+            Votes = new List<DynamicMessage>();
+            Upvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteU");
+            Downvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteD");
             Discord.MessageCreated += async (arg) =>
             {
-                if (arg.Message.Content.Substring(0, 4) == ">ib ")
+                Dispatcher.Execute(async () =>
                 {
-                    var input = arg.Message.Content.Substring(4, arg.Message.Content.Length - 4);
-                    ParseInput(input, out string command, out string[] args);
-                    switch (command)
+                    if (arg.Message.Content.Length > 4 && arg.Message.Content.Substring(0, 4) == ">ib ")
                     {
-                        case "help":
-                            await arg.Channel.SendMessageAsync(
+                        var input = arg.Message.Content.Substring(4, arg.Message.Content.Length - 4);
+                        ParseInput(input, out string command, out string[] args);
+                        switch (command)
+                        {
+                            case "help":
+                                await arg.Channel.SendMessageAsync(
 @"Help pannel :");
-                            break;
+                                break;
 
-                        default:
-                            await arg.Channel.SendMessageAsync("Unknown command, type \">ib help\"");
-                            break;
+                            case "vote":
+                                string content = args[0];
+                                TimeSpan duration = TimeSpan.FromHours(24);
+                                if (args.Length > 1)
+                                    duration = TimeSpan.FromHours(double.Parse(args[1]));
+                                DiscordMessage message;
+                                message = await arg.Message.RespondAsync(content);
+                                {
+                                    await message.CreateReactionAsync(Upvote);
+                                    await message.CreateReactionAsync(Downvote);
+                                    Votes.Add(new DynamicMessage() { Message = message, Lifetime = duration });
+                                    SaveData();
+                                }
+                                break;
+
+                            default:
+                                await arg.Channel.SendMessageAsync("Unknown command, type \">ib help\"");
+                                break;
+                        }
                     }
-                }
+                });
+            };
+            Discord.MessageReactionAdded += async (arg) =>
+            {
+                Dispatcher.Execute(async () =>
+                {
+                    var message = Votes.Find((m) => arg.Message.ChannelId == m.Message.ChannelId && arg.Message.CreationTimestamp == m.Message.CreationTimestamp);
+                    if (message != null && !arg.User.IsBot)
+                    {
+                        if (arg.Emoji.Id == Upvote.Id)
+                        {
+                            var downvotes = await message.Message.GetReactionsAsync(Downvote);
+                            if (downvotes.Any((u) => u.Id == arg.User.Id))
+                                await message.Message.DeleteReactionAsync(Downvote, arg.User);
+                        }
+                        else if (arg.Emoji.Id == Downvote.Id)
+                        {
+                            var upvotes = await message.Message.GetReactionsAsync(Upvote);
+                            if (upvotes.Any((u) => u.Id == arg.User.Id))
+                                await message.Message.DeleteReactionAsync(Upvote, arg.User);
+                        }
+                    }
+                });
+            };
+
+            Discord.MessageReactionRemoved += async (arg) =>
+            {
+                Dispatcher.Execute(async () =>
+                {
+                });
             };
         }
 
