@@ -13,6 +13,12 @@ namespace InfoBot
 {
     internal partial class Program
     {
+        #region Private Fields
+
+        private static ConsoleColor DefaultColor;
+
+        #endregion Private Fields
+
         #region Private Properties
 
         private static DiscordClient Discord { get; set; }
@@ -27,6 +33,7 @@ namespace InfoBot
 
         private static async Task AsyncMain(string[] args)
         {
+            DefaultColor = Console.ForegroundColor;
             string token;
             Console.Write("Token :");
             token = Console.ReadLine();
@@ -36,7 +43,7 @@ namespace InfoBot
                 Environment.Exit(0);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Connected");
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = DefaultColor;
             Console.WriteLine("Initalization...");
             ///////////////////////////////////////
 
@@ -44,13 +51,13 @@ namespace InfoBot
             var consoleThread = new Thread(ConsoleManager);
             DUTInfoServer = await Discord.GetGuildAsync(619513574850560010);
             InitCommands();
-            ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame("type \">ib help\"")));
+            ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
             LoadData();
 
             ///////////////////////////////////////
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Initialized");
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = DefaultColor;
             consoleThread.Start();
 
             DateTimeOffset lastListCheck = DateTimeOffset.Now;
@@ -104,14 +111,14 @@ namespace InfoBot
                             {
                                 Console.ForegroundColor = ConsoleColor.Green;
                                 Console.WriteLine("Connected");
-                                Console.ForegroundColor = ConsoleColor.Gray;
+                                Console.ForegroundColor = DefaultColor;
                             }
                             break;
 
                         default:
                             Console.ForegroundColor = ConsoleColor.Yellow;
                             Console.WriteLine("Command not recognized, type \"help\"");
-                            Console.ForegroundColor = ConsoleColor.Gray;
+                            Console.ForegroundColor = DefaultColor;
                             break;
                     }
                 }
@@ -132,7 +139,7 @@ namespace InfoBot
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Fatal error : " + e.ToString());
-                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.ForegroundColor = DefaultColor;
                 return false;
             }
             return true;
@@ -151,7 +158,7 @@ namespace InfoBot
             {
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Fatal error : " + e.ToString());
-                Console.ForegroundColor = ConsoleColor.Gray;
+                Console.ForegroundColor = DefaultColor;
                 returnValue = default(T);
                 return false;
             }
@@ -165,6 +172,7 @@ namespace InfoBot
                 var file = new StreamWriter("data.json");
                 var defaultObj = new Save();
                 defaultObj.votes = new Vote[0];
+                defaultObj.polls = new Poll[0];
                 file.Write(JsonConvert.SerializeObject(defaultObj));
                 file.Close();
             }
@@ -174,14 +182,32 @@ namespace InfoBot
 
             foreach (var item in obj.votes)
             {
-                var vote = new DynamicMessage();
+                var vote = new VoteMessage();
                 vote.Lifetime = item.duration;
+                vote.ShowUsers = item.showUsers;
                 DiscordChannel chan;
                 ExecuteAsyncMethod(() => Discord.GetChannelAsync(item.message.channel), out chan);
                 DiscordMessage mess;
                 ExecuteAsyncMethod(() => chan.GetMessageAsync(item.message.id), out mess);
                 vote.Message = mess;
                 Votes.Add(vote);
+            }
+            foreach (var item in obj.polls)
+            {
+                var poll = new PollMessage();
+                poll.Lifetime = item.duration;
+                poll.ShowUsers = item.showUsers;
+                DiscordChannel chan;
+                ExecuteAsyncMethod(() => Discord.GetChannelAsync(item.message.channel), out chan);
+                DiscordMessage mess;
+                ExecuteAsyncMethod(() => chan.GetMessageAsync(item.message.id), out mess);
+                poll.Message = mess;
+                poll.Open = item.open;
+                poll.Choices = new List<Tuple<string, DiscordEmoji>>();
+                foreach (var item2 in item.choices)
+                    poll.Choices.Add(new Tuple<string, DiscordEmoji>(item2.name, DiscordEmoji.FromGuildEmote(Discord, item2.id)));
+
+                Polls.Add(poll);
             }
         }
 
@@ -237,9 +263,30 @@ namespace InfoBot
             var obj = new Save();
             List<Vote> v = new List<Vote>();
             foreach (var item in Votes)
-                v.Add(new Vote() { duration = item.Lifetime, message = new SpecialMessage() { channel = item.Message.ChannelId, id = item.Message.Id } });
+                v.Add(new Vote()
+                {
+                    duration = item.Lifetime,
+                    showUsers = item.ShowUsers,
+                    message = new SpecialMessage() { channel = item.Message.ChannelId, id = item.Message.Id }
+                });
             obj.votes = v.ToArray();
+            List<Poll> p = new List<Poll>();
+            foreach (var item in Polls)
+            {
+                List<Poll.Choice> choices = new List<Poll.Choice>();
+                foreach (var item2 in item.Choices)
+                    choices.Add(new Poll.Choice() { id = item2.Item2.Id, name = item2.Item1 });
 
+                p.Add(new Poll()
+                {
+                    duration = item.Lifetime,
+                    showUsers = item.ShowUsers,
+                    open = item.Open,
+                    message = new SpecialMessage() { channel = item.Message.ChannelId, id = item.Message.Id },
+                    choices = choices.ToArray()
+                });
+            }
+            obj.polls = p.ToArray();
             var stream = new StreamWriter("data.json");
             stream.Write(JsonConvert.SerializeObject(obj));
             stream.Close();
@@ -258,8 +305,78 @@ namespace InfoBot
                     content.Append(item.Message.Content + "\n");
                     var upvotes = await item.Message.GetReactionsAsync(Upvote);
                     var downvotes = await item.Message.GetReactionsAsync(Downvote);
-                    content.Append("<" + Upvote.GetDiscordName() + Upvote.Id + ">" + " : " + (upvotes.Count - 1).ToString() + "\n");
-                    content.Append("<" + Downvote.GetDiscordName() + Downvote.Id + ">" + " : " + (downvotes.Count - 1).ToString() + "\n");
+                    if (!item.ShowUsers)
+                    {
+                        content.Append("<" + Upvote.GetDiscordName() + Upvote.Id + "> : **" + (upvotes.Count - 1).ToString() + "**\n");
+                        content.Append("<" + Downvote.GetDiscordName() + Downvote.Id + "> : **" + (downvotes.Count - 1).ToString() + "**");
+                    }
+                    else
+                    {
+                        content.Append("<" + Upvote.GetDiscordName() + Upvote.Id + "> : **" + (upvotes.Count - 1).ToString() + "** : ");
+                        bool first = true;
+                        foreach (var user in await item.Message.GetReactionsAsync(Upvote))
+                        {
+                            if (!user.IsBot)
+                            {
+                                if (!first)
+                                    content.Append(", ");
+                                content.Append(user.Mention);
+                                first = false;
+                            }
+                        }
+                        content.Append("\n<" + Downvote.GetDiscordName() + Downvote.Id + "> : **" + (downvotes.Count - 1).ToString() + "** : ");
+                        first = true;
+                        foreach (var user in await item.Message.GetReactionsAsync(Downvote))
+                        {
+                            if (!user.IsBot)
+                            {
+                                if (!first)
+                                    content.Append(", ");
+                                content.Append(user.Mention);
+                                first = false;
+                            }
+                        }
+                    }
+                    ExecuteAsyncMethod(() => item.Message.Channel.SendMessageAsync(content.ToString()));
+                    await item.Message.DeleteAsync();
+                }
+            }
+            for (int i = Polls.Count - 1; i >= 0; i--)
+            {
+                var item = Polls[i];
+                if (item.Message.CreationTimestamp + item.Lifetime < DateTimeOffset.Now)
+                {
+                    Polls.RemoveAt(i);
+                    StringBuilder content = new StringBuilder();
+                    content.Append("**Résultats :** ");
+                    content.Append(item.Message.Content + "\n\n");
+                    if (!item.ShowUsers)
+                    {
+                        foreach (var choice in item.Choices)
+                            content.Append("\n<" + choice.Item2.GetDiscordName() + choice.Item2.Id + "> : **" + ((await item.Message.GetReactionsAsync(choice.Item2)).Count - 1).ToString() + "**");
+                    }
+                    else
+                    {
+                        foreach (var choice in item.Choices)
+                        {
+                            var users = await item.Message.GetReactionsAsync(choice.Item2);
+                            if (choice.Item2.RequireColons)
+                                content.Append("\n<" + choice.Item2.GetDiscordName() + choice.Item2.Id + "> : **" + (users.Count - 1).ToString() + "** : ");
+                            else
+                                content.Append("\n" + choice.Item2.Name + " : **" + (users.Count - 1).ToString() + "** : ");
+                            bool first = true;
+                            foreach (var user in users)
+                            {
+                                if (!user.IsBot)
+                                {
+                                    if (!first)
+                                        content.Append(", ");
+                                    first = false;
+                                    content.Append(user.Mention);
+                                }
+                            }
+                        }
+                    }
                     ExecuteAsyncMethod(() => item.Message.Channel.SendMessageAsync(content.ToString()));
                     await item.Message.DeleteAsync();
                 }

@@ -8,10 +8,42 @@ using DSharpPlus.Entities;
 
 namespace InfoBot
 {
+    internal struct Poll
+    {
+        #region Public Fields
+
+        public Choice[] choices;
+
+        public TimeSpan duration;
+
+        public SpecialMessage message;
+
+        public bool open;
+
+        public bool showUsers;
+
+        #endregion Public Fields
+
+        #region Public Structs
+
+        public struct Choice
+        {
+            #region Public Fields
+
+            public ulong id;
+            public string name;
+
+            #endregion Public Fields
+        }
+
+        #endregion Public Structs
+    }
+
     internal struct Save
     {
         #region Public Fields
 
+        public Poll[] polls;
         public Vote[] votes;
 
         #endregion Public Fields
@@ -33,16 +65,31 @@ namespace InfoBot
 
         public TimeSpan duration;
         public SpecialMessage message;
+        public bool showUsers;
 
         #endregion Public Fields
     }
 
-    internal class DynamicMessage
+    public class PollMessage
+    {
+        #region Public Properties
+
+        public List<Tuple<string, DiscordEmoji>> Choices { get; set; }
+        public TimeSpan Lifetime { get; set; }
+        public DiscordMessage Message { get; set; }
+        public bool Open { get; set; }
+        public bool ShowUsers { get; set; }
+
+        #endregion Public Properties
+    }
+
+    public class VoteMessage
     {
         #region Public Properties
 
         public TimeSpan Lifetime { get; set; }
         public DiscordMessage Message { get; set; }
+        public bool ShowUsers { get; set; }
 
         #endregion Public Properties
     }
@@ -58,7 +105,8 @@ namespace InfoBot
 
         #region Private Properties
 
-        private static List<DynamicMessage> Votes { get; set; }
+        private static List<PollMessage> Polls { get; set; }
+        private static List<VoteMessage> Votes { get; set; }
 
         #endregion Private Properties
 
@@ -66,7 +114,8 @@ namespace InfoBot
 
         private static void InitCommands()
         {
-            Votes = new List<DynamicMessage>();
+            Votes = new List<VoteMessage>();
+            Polls = new List<PollMessage>();
             Upvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteU");
             Downvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteD");
             Discord.MessageCreated += async (arg) =>
@@ -84,29 +133,107 @@ namespace InfoBot
 @"Help pannel :
 ```
 help                                            show this pannel.
-vote <question> [duration (hours)]                  start a vote (upvote / downvote), by default : 24 hour duration.
+
+vote <question> [-d<duration (hours)>] [-u]                  start a vote (upvote / downvote), by default : 24 hour duration. Use -u if the users are shown at the end.
+
 figgle <text>                                   change the text into ascii art.
+
+poll <question> <open|closed> [-d<duration (hours)>] [-u] [<option1>] [<emoji1>] ...    start a poll with multiple choices. open if the choices can be multiple, otherwise closed. By default 24h. Use -u if the users are shown at the end.
 ```");
                                 break;
 
                             case "vote":
-                                string content = args[0];
-                                TimeSpan duration = TimeSpan.FromHours(24);
-                                if (args.Length > 1)
-                                    duration = TimeSpan.FromHours(double.Parse(args[1].Replace('.', ',')));
-                                DiscordMessage message;
-                                message = await arg.Message.RespondAsync(content);
                                 {
-                                    await message.CreateReactionAsync(Upvote);
-                                    await message.CreateReactionAsync(Downvote);
-                                    Votes.Add(new DynamicMessage() { Message = message, Lifetime = duration });
-                                    SaveData();
+                                    string content = args[0];
+                                    TimeSpan duration = TimeSpan.FromHours(24);
+                                    bool showUsers = false;
+                                    if (args.Length > 1)
+                                    {
+                                        foreach (var item in args)
+                                        {
+                                            if (item.Substring(0, 2) == "-d")
+                                                duration = TimeSpan.FromHours(double.Parse(item.Substring(2).Replace('.', ',')));
+                                            if (item == "-u")
+                                                showUsers = true;
+                                        }
+                                    }
+                                    DiscordMessage message;
+                                    message = await arg.Message.RespondAsync(content);
+                                    {
+                                        await message.CreateReactionAsync(Upvote);
+                                        await message.CreateReactionAsync(Downvote);
+                                        Votes.Add(new VoteMessage() { Message = message, Lifetime = duration, ShowUsers = showUsers });
+                                        SaveData();
+                                    }
                                 }
                                 break;
 
                             case "figgle":
                                 var toFiggle = args[0];
                                 await arg.Channel.SendMessageAsync("```\n" + Figgle.FiggleFonts.Standard.Render(toFiggle) + "\n```");
+                                break;
+
+                            case "poll":
+                                {
+                                    var question = args[0];
+                                    bool open = args[1] == "open";
+                                    bool showUsers = false;
+                                    TimeSpan duration = TimeSpan.FromHours(24);
+                                    int choiceIndex = 2;
+                                    if (args[choiceIndex].Substring(0, 2) == "-d")
+                                    {
+                                        duration = TimeSpan.FromHours(double.Parse(args[choiceIndex].Substring(2).Replace('.', ',')));
+                                        choiceIndex++;
+                                    }
+                                    if (args[choiceIndex] == "-u")
+                                    {
+                                        showUsers = true;
+                                        choiceIndex++;
+                                    }
+                                    if (args[choiceIndex].Substring(0, 2) == "-d")
+                                    {
+                                        duration = TimeSpan.FromHours(double.Parse(args[choiceIndex].Substring(2).Replace('.', ',')));
+                                        choiceIndex++;
+                                    }
+                                    List<Tuple<string, DiscordEmoji>> reactions = new List<Tuple<string, DiscordEmoji>>();
+                                    for (; choiceIndex < args.Length; choiceIndex += 2)
+                                    {
+                                        var choice = args[choiceIndex];
+                                        DiscordEmoji emoji;
+                                        try
+                                        {
+                                            var id = args[choiceIndex + 1].Split(':').Last();
+                                            emoji = DiscordEmoji.FromGuildEmote(Discord, ulong.Parse(id.Substring(0, id.Length - 1)));
+                                        }
+                                        catch (Exception e)
+                                        {
+                                            emoji = DiscordEmoji.FromUnicode(Discord, args[choiceIndex + 1]);
+                                        }
+                                        reactions.Add(new Tuple<string, DiscordEmoji>(choice, emoji));
+                                    }
+                                    var builder = new StringBuilder();
+                                    builder.Append(question + "\n");
+                                    foreach (var item in reactions)
+                                    {
+                                        if (item.Item2.RequireColons)
+                                            builder.Append("<" + item.Item2.GetDiscordName() + item.Item2.Id + "> : " + item.Item1 + "\n");
+                                        else
+                                            builder.Append(item.Item2.Name + " : " + item.Item1 + "\n");
+                                    }
+
+                                    var message = await arg.Channel.SendMessageAsync(builder.ToString());
+                                    Polls.Add(new PollMessage()
+                                    {
+                                        Choices = reactions,
+                                        Lifetime = duration,
+                                        Message = message,
+                                        ShowUsers = showUsers,
+                                        Open = open
+                                    });
+                                    SaveData();
+                                    foreach (var item in reactions)
+                                        await message.CreateReactionAsync(item.Item2);
+                                }
                                 break;
 
                             default:
@@ -120,20 +247,43 @@ figgle <text>                                   change the text into ascii art.
             {
                 Dispatcher.Execute(async () =>
                 {
-                    var message = Votes.Find((m) => arg.Message.ChannelId == m.Message.ChannelId && arg.Message.CreationTimestamp == m.Message.CreationTimestamp);
-                    if (message != null && !arg.User.IsBot)
                     {
-                        if (arg.Emoji.Id == Upvote.Id)
+                        //vote
+                        var message = Votes.Find((m) => arg.Message.ChannelId == m.Message.ChannelId && arg.Message.Id == m.Message.Id);
+                        if (message != null && !arg.User.IsBot)
                         {
-                            var downvotes = await message.Message.GetReactionsAsync(Downvote);
-                            if (downvotes.Any((u) => u.Id == arg.User.Id))
-                                await message.Message.DeleteReactionAsync(Downvote, arg.User);
+                            if (arg.Emoji.Id == Upvote.Id)
+                            {
+                                var downvotes = await message.Message.GetReactionsAsync(Downvote);
+                                if (downvotes.Any((u) => u.Id == arg.User.Id))
+                                    await message.Message.DeleteReactionAsync(Downvote, arg.User);
+                            }
+                            else if (arg.Emoji.Id == Downvote.Id)
+                            {
+                                var upvotes = await message.Message.GetReactionsAsync(Upvote);
+                                if (upvotes.Any((u) => u.Id == arg.User.Id))
+                                    await message.Message.DeleteReactionAsync(Upvote, arg.User);
+                            }
                         }
-                        else if (arg.Emoji.Id == Downvote.Id)
+                    }
+                    {
+                        //poll
+                        var message = Polls.Find((m) => arg.Message.ChannelId == m.Message.ChannelId && arg.Message.Id == m.Message.Id);
+                        if (message != null && !arg.User.IsBot)
                         {
-                            var upvotes = await message.Message.GetReactionsAsync(Upvote);
-                            if (upvotes.Any((u) => u.Id == arg.User.Id))
-                                await message.Message.DeleteReactionAsync(Upvote, arg.User);
+                            if (!message.Choices.Any((t) => t.Item2.Id == arg.Emoji.Id))
+                                await arg.Message.DeleteReactionAsync(arg.Emoji, arg.User);
+                            else if (!message.Open)
+                            {
+                                foreach (var item in message.Choices)
+                                {
+                                    if (arg.Emoji.Id != item.Item2.Id)
+                                    {
+                                        if ((await arg.Message.GetReactionsAsync(item.Item2)).Contains(arg.User))
+                                            await arg.Message.DeleteReactionAsync(item.Item2, arg.User);
+                                    }
+                                }
+                            }
                         }
                     }
                 });
