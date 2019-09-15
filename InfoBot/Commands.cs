@@ -81,14 +81,18 @@ namespace InfoBot
                         {
                             case "help":
                                 await arg.Channel.SendMessageAsync(
-@"Help pannel :");
+@"Help pannel :
+```
+help                                            show this pannel.
+vote <question> [duration (hours)]                  start a vote (upvote / downvote), by default : 24 hour duration.
+```");
                                 break;
 
                             case "vote":
                                 string content = args[0];
                                 TimeSpan duration = TimeSpan.FromHours(24);
                                 if (args.Length > 1)
-                                    duration = TimeSpan.FromHours(double.Parse(args[1]));
+                                    duration = TimeSpan.FromHours(double.Parse(args[1].Replace('.', ',')));
                                 DiscordMessage message;
                                 message = await arg.Message.RespondAsync(content);
                                 {
