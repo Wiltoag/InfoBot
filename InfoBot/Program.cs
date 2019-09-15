@@ -8,7 +8,7 @@ using DSharpPlus;
 
 namespace InfoBot
 {
-    internal class Program
+    internal partial class Program
     {
         #region Private Properties
 
@@ -26,26 +26,22 @@ namespace InfoBot
             token = Console.ReadLine();
             Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
             Console.WriteLine("Connecting...");
-            bool error = false;
-            try
-            {
-                if (!Discord.ConnectAsync().Wait(TimeSpan.FromSeconds(10)))
-                    throw new Exception("Unable to connect (10 sec timeout)");
-            }
-            catch (Exception e)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Fatal error : " + e.ToString());
-                error = true;
-                Console.ReadKey();
-            }
-            if (error)
+            if (!ExecuteAsyncMethod(() => Discord.ConnectAsync()))
                 Environment.Exit(0);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Connected");
             Console.ForegroundColor = ConsoleColor.Gray;
+            Console.WriteLine("Initalization...");
+            ///////////////////////////////////////
+
             Dispatcher = new Dispatcher();
             var consoleThread = new Thread(ConsoleManager);
+            InitCommands();
+
+            ///////////////////////////////////////
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Initialized");
+            Console.ForegroundColor = ConsoleColor.Gray;
             consoleThread.Start();
 
             while (true)
@@ -62,7 +58,52 @@ namespace InfoBot
                 Console.Write('>');
                 var input = Console.ReadLine();
                 ParseInput(input, out string command, out string[] args);
+                switch (command)
+                {
+                    case "help":
+                        Console.WriteLine("quit : close the bot.");
+                        Console.WriteLine("reconnect : reconnect the bot.");
+                        Console.WriteLine("help : display this info.");
+                        break;
+
+                    case "quit":
+                        Environment.Exit(0);
+                        break;
+
+                    case "reconnect":
+                        Console.WriteLine("Connecting...");
+                        if (ExecuteAsyncMethod(() => Discord.ReconnectAsync()))
+                        {
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.WriteLine("Connected");
+                            Console.ForegroundColor = ConsoleColor.Gray;
+                        }
+                        break;
+
+                    default:
+                        Console.ForegroundColor = ConsoleColor.Yellow;
+                        Console.WriteLine("Command not recognized, type \"help\"");
+                        Console.ForegroundColor = ConsoleColor.Gray;
+                        break;
+                }
             }
+        }
+
+        private static bool ExecuteAsyncMethod(Func<Task> func)
+        {
+            try
+            {
+                if (!func().Wait(TimeSpan.FromSeconds(10)))
+                    throw new Exception("10 sec timeout passed, command canceled");
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Fatal error : " + e.ToString());
+                Console.ForegroundColor = ConsoleColor.Gray;
+                return false;
+            }
+            return true;
         }
 
         private static void Main(string[] args)
