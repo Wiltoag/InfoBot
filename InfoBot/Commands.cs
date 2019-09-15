@@ -21,7 +21,8 @@ namespace InfoBot
                     switch (command)
                     {
                         case "help":
-                            await arg.Channel.SendMessageAsync();
+                            await arg.Channel.SendMessageAsync(
+@"Help pannel :");
                             break;
 
                         default:

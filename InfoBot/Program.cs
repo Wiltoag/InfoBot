@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
+using DSharpPlus.Entities;
 
 namespace InfoBot
 {
@@ -14,6 +15,7 @@ namespace InfoBot
 
         private static DiscordClient Discord { get; set; }
         private static Dispatcher Dispatcher { get; set; }
+        private static DiscordGuild DUTInfoServer { get; set; }
 
         #endregion Private Properties
 
@@ -36,7 +38,9 @@ namespace InfoBot
 
             Dispatcher = new Dispatcher();
             var consoleThread = new Thread(ConsoleManager);
+            DUTInfoServer = await Discord.GetGuildAsync(619513574850560010);
             InitCommands();
+            ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame("type \">ib help\"")));
 
             ///////////////////////////////////////
             Console.ForegroundColor = ConsoleColor.Green;
@@ -51,40 +55,54 @@ namespace InfoBot
             }
         }
 
-        private static void ConsoleManager()
+        private async static void ConsoleManager()
         {
             while (true)
             {
                 Console.Write('>');
                 var input = Console.ReadLine();
                 ParseInput(input, out string command, out string[] args);
-                switch (command)
+                try
                 {
-                    case "help":
-                        Console.WriteLine("quit : close the bot.");
-                        Console.WriteLine("reconnect : reconnect the bot.");
-                        Console.WriteLine("help : display this info.");
-                        break;
+                    switch (command)
+                    {
+                        case "help":
+                            Console.WriteLine("quit : close the bot.");
+                            Console.WriteLine("reconnect : reconnect the bot.");
+                            Console.WriteLine("help : display this info.");
+                            Console.WriteLine("disp <channel> <message> : send a message to a channel.");
+                            break;
 
-                    case "quit":
-                        Environment.Exit(0);
-                        break;
+                        case "quit":
+                            Environment.Exit(0);
+                            break;
 
-                    case "reconnect":
-                        Console.WriteLine("Connecting...");
-                        if (ExecuteAsyncMethod(() => Discord.ReconnectAsync()))
-                        {
-                            Console.ForegroundColor = ConsoleColor.Green;
-                            Console.WriteLine("Connected");
+                        case "disp":
+                            DiscordChannel chan;
+                            if (!ExecuteAsyncMethod(() => Discord.GetChannelAsync(ulong.Parse(args[0])), out chan))
+                                break;
+                            ExecuteAsyncMethod(() => chan.SendMessageAsync(args[1]));
+                            break;
+
+                        case "reconnect":
+                            Console.WriteLine("Connecting...");
+                            if (ExecuteAsyncMethod(() => Discord.ReconnectAsync()))
+                            {
+                                Console.ForegroundColor = ConsoleColor.Green;
+                                Console.WriteLine("Connected");
+                                Console.ForegroundColor = ConsoleColor.Gray;
+                            }
+                            break;
+
+                        default:
+                            Console.ForegroundColor = ConsoleColor.Yellow;
+                            Console.WriteLine("Command not recognized, type \"help\"");
                             Console.ForegroundColor = ConsoleColor.Gray;
-                        }
-                        break;
-
-                    default:
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("Command not recognized, type \"help\"");
-                        Console.ForegroundColor = ConsoleColor.Gray;
-                        break;
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
                 }
             }
         }
@@ -101,6 +119,26 @@ namespace InfoBot
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Fatal error : " + e.ToString());
                 Console.ForegroundColor = ConsoleColor.Gray;
+                return false;
+            }
+            return true;
+        }
+
+        private static bool ExecuteAsyncMethod<T>(Func<Task<T>> func, out T returnValue)
+        {
+            try
+            {
+                var task = func();
+                if (!func().Wait(TimeSpan.FromSeconds(10)))
+                    throw new Exception("10 sec timeout passed, command canceled");
+                returnValue = task.Result;
+            }
+            catch (Exception e)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("Fatal error : " + e.ToString());
+                Console.ForegroundColor = ConsoleColor.Gray;
+                returnValue = default;
                 return false;
             }
             return true;
