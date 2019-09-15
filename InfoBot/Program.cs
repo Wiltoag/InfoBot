@@ -152,7 +152,7 @@ namespace InfoBot
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Fatal error : " + e.ToString());
                 Console.ForegroundColor = ConsoleColor.Gray;
-                returnValue = default;
+                returnValue = default(T);
                 return false;
             }
             return true;

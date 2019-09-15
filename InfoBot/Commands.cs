@@ -85,6 +85,7 @@ namespace InfoBot
 ```
 help                                            show this pannel.
 vote <question> [duration (hours)]                  start a vote (upvote / downvote), by default : 24 hour duration.
+figgle <text>                                   change the text into ascii art.
 ```");
                                 break;
 
@@ -101,6 +102,11 @@ vote <question> [duration (hours)]                  start a vote (upvote / downv
                                     Votes.Add(new DynamicMessage() { Message = message, Lifetime = duration });
                                     SaveData();
                                 }
+                                break;
+
+                            case "figgle":
+                                var toFiggle = args[0];
+                                await arg.Channel.SendMessageAsync("```\n" + Figgle.FiggleFonts.Standard.Render(toFiggle) + "\n```");
                                 break;
 
                             default:
