@@ -17,6 +17,9 @@ namespace InfoBot
 
         private static ConsoleColor DefaultColor;
 
+        private static DiscordGuild DUTInfoServer;
+        private static DiscordGuild TestServer;
+
         #endregion Private Fields
 
         #region Private Properties
@@ -24,8 +27,6 @@ namespace InfoBot
         private static DiscordClient Discord { get; set; }
 
         private static Dispatcher Dispatcher { get; set; }
-
-        private static DiscordGuild DUTInfoServer { get; set; }
 
         #endregion Private Properties
 
@@ -49,7 +50,9 @@ namespace InfoBot
 
             Dispatcher = new Dispatcher();
             var consoleThread = new Thread(ConsoleManager);
-            DUTInfoServer = await Discord.GetGuildAsync(619513574850560010);
+            if (!ExecuteAsyncMethod(() => Discord.GetGuildAsync(619513574850560010), out DUTInfoServer))
+                DUTInfoServer = null;
+            ExecuteAsyncMethod(() => Discord.GetGuildAsync(437704877221609472), out TestServer);
             InitCommands();
             ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
             LoadData();
@@ -353,7 +356,12 @@ namespace InfoBot
                     if (!item.ShowUsers)
                     {
                         foreach (var choice in item.Choices)
-                            content.Append("\n<" + choice.Item2.GetDiscordName() + choice.Item2.Id + "> : **" + ((await item.Message.GetReactionsAsync(choice.Item2)).Count - 1).ToString() + "**");
+                        {
+                            if (choice.Item2.RequireColons)
+                                content.Append("\n<" + choice.Item2.GetDiscordName() + choice.Item2.Id + "> : **" + ((await item.Message.GetReactionsAsync(choice.Item2)).Count - 1).ToString() + "**");
+                            else
+                                content.Append("\n" + choice.Item2.Name + " : **" + ((await item.Message.GetReactionsAsync(choice.Item2)).Count - 1).ToString() + "**");
+                        }
                     }
                     else
                     {

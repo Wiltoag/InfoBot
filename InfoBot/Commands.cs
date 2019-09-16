@@ -116,13 +116,21 @@ namespace InfoBot
         {
             Votes = new List<VoteMessage>();
             Polls = new List<PollMessage>();
-            Upvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteU");
-            Downvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteD");
+            if (DUTInfoServer != null)
+            {
+                Upvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteU");
+                Downvote = DUTInfoServer.Emojis.First((e) => e.Name == "voteD");
+            }
+            else
+            {
+                Upvote = TestServer.Emojis.First((e) => e.Name == "upvote");
+                Downvote = TestServer.Emojis.First((e) => e.Name == "downvote");
+            }
             Discord.MessageCreated += async (arg) =>
             {
                 Dispatcher.Execute(async () =>
                 {
-                    if (arg.Message.Content.Length > 4 && arg.Message.Content.Substring(0, 4) == ">ib ")
+                    if (arg.Message.Content.Length > 4 && arg.Message.Content.Substring(0, 4) == ">tb ")
                     {
                         var input = arg.Message.Content.Substring(4, arg.Message.Content.Length - 4);
                         ParseInput(input, out string command, out string[] args);
