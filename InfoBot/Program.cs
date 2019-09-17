@@ -2,12 +2,14 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using Newtonsoft.Json;
+using Ical.Net;
 
 namespace InfoBot
 {
@@ -15,14 +17,18 @@ namespace InfoBot
     {
         #region Private Fields
 
+        private static WebClient Client;
         private static ConsoleColor DefaultColor;
 
         private static DiscordGuild DUTInfoServer;
+        private static DiscordChannel[] Edt;
         private static DiscordGuild TestServer;
 
         #endregion Private Fields
 
         #region Private Properties
+
+        private static string[] CalendarUrl { get; set; }
 
         private static DiscordClient Discord { get; set; }
 
@@ -34,6 +40,16 @@ namespace InfoBot
 
         private static async Task AsyncMain(string[] args)
         {
+            CalendarUrl = new string[8];
+            CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=e81e5e310001831"; //1.1
+            CalendarUrl[1] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //1.2
+            CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=329314450001800"; //2.1
+            CalendarUrl[3] = ""; //2.2
+            CalendarUrl[4] = ""; //3.1
+            CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=b4a52df5e501843"; //3.2
+            CalendarUrl[6] = ""; //4.1
+            CalendarUrl[7] = ""; //4.2
+            Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
             string token;
             Console.Write("Token :");
@@ -56,6 +72,29 @@ namespace InfoBot
             InitCommands();
             ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
             LoadData();
+            ExecuteAsyncMethod(async () =>
+            {
+                Edt[0] = await Discord.GetChannelAsync(623557669810077697);
+                Edt[1] = await Discord.GetChannelAsync(623557699497623602);
+                Edt[2] = await Discord.GetChannelAsync(623557716694138890);
+                Edt[3] = await Discord.GetChannelAsync(623557732930289664);
+                Edt[4] = await Discord.GetChannelAsync(623557762101542923);
+                Edt[5] = await Discord.GetChannelAsync(623557780527382530);
+                Edt[6] = await Discord.GetChannelAsync(623557795660431390);
+                Edt[7] = await Discord.GetChannelAsync(623557977223200798);
+            });
+            //debug
+            ExecuteAsyncMethod(async () =>
+            {
+                Edt[0] = await Discord.GetChannelAsync(437704877221609474);
+                Edt[1] = await Discord.GetChannelAsync(437704877221609474);
+                Edt[2] = await Discord.GetChannelAsync(437704877221609474);
+                Edt[3] = await Discord.GetChannelAsync(437704877221609474);
+                Edt[4] = await Discord.GetChannelAsync(437704877221609474);
+                Edt[5] = await Discord.GetChannelAsync(437704877221609474);
+                Edt[6] = await Discord.GetChannelAsync(437704877221609474);
+                Edt[7] = await Discord.GetChannelAsync(437704877221609474);
+            });
 
             ///////////////////////////////////////
             Console.ForegroundColor = ConsoleColor.Green;
@@ -63,17 +102,23 @@ namespace InfoBot
             Console.ForegroundColor = DefaultColor;
             consoleThread.Start();
 
-            DateTimeOffset lastListCheck = DateTimeOffset.Now;
+            DateTimeOffset lastListCheck = DateTimeOffset.UnixEpoch;
+            DateTimeOffset lastCalendarCheck = DateTimeOffset.UnixEpoch;
 
             while (true)
             {
                 var next = Dispatcher.GetNext();
                 if (next != null)
                     ExecuteAsyncMethod(next);
-                if (lastListCheck + TimeSpan.FromSeconds(5) < DateTimeOffset.Now)
+                if (lastListCheck + TimeSpan.FromSeconds(20) < DateTimeOffset.Now)
                 {
                     lastListCheck = DateTimeOffset.Now;
                     ExecuteAsyncMethod(UpdateLists);
+                }
+                if (lastCalendarCheck + TimeSpan.FromHours(2) < DateTimeOffset.Now)
+                {
+                    lastCalendarCheck = DateTimeOffset.Now;
+                    ExecuteAsyncMethod(async () => UpdateCalendars());
                 }
                 Thread.Sleep(TimeSpan.FromMilliseconds(50));
             }
@@ -293,6 +338,30 @@ namespace InfoBot
             var stream = new StreamWriter("data.json");
             stream.Write(JsonConvert.SerializeObject(obj));
             stream.Close();
+        }
+
+        private static void UpdateCalendars()
+        {
+            DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
+            DateTime[] daysToDisplay = new DateTime[]
+            {
+                mondayThisWeek,
+                mondayThisWeek.AddDays(1),
+                mondayThisWeek.AddDays(2),
+                mondayThisWeek.AddDays(3),
+                mondayThisWeek.AddDays(4),
+                mondayThisWeek.AddDays(5),
+                mondayThisWeek.AddDays(7),
+                mondayThisWeek.AddDays(8),
+                mondayThisWeek.AddDays(9),
+                mondayThisWeek.AddDays(10),
+                mondayThisWeek.AddDays(11),
+                mondayThisWeek.AddDays(12)
+            };
+            Console.WriteLine(mondayThisWeek);
+            for (int i = 0; i < Edt.Length; i++)
+            {
+            }
         }
 
         private static async Task UpdateLists()
