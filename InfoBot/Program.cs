@@ -10,6 +10,7 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using Newtonsoft.Json;
 using Ical.Net;
+using Ical.Net.CalendarComponents;
 
 namespace InfoBot
 {
@@ -17,12 +18,16 @@ namespace InfoBot
     {
         #region Private Fields
 
+        private const bool DEBUG = false;
+
         private static WebClient Client;
         private static ConsoleColor DefaultColor;
 
         private static DiscordGuild DUTInfoServer;
-        private static DiscordChannel[] Edt;
+        private static DiscordChannel[] EdtChannel;
+        private static int[] OldICalHash;
         private static DiscordGuild TestServer;
+        private static DiscordRole[] TPRoles;
 
         #endregion Private Fields
 
@@ -41,6 +46,7 @@ namespace InfoBot
         private static async Task AsyncMain(string[] args)
         {
             CalendarUrl = new string[8];
+            TPRoles = new DiscordRole[8];
             CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=e81e5e310001831"; //1.1
             CalendarUrl[1] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //1.2
             CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=329314450001800"; //2.1
@@ -72,29 +78,49 @@ namespace InfoBot
             InitCommands();
             ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
             LoadData();
+            EdtChannel = new DiscordChannel[8];
             ExecuteAsyncMethod(async () =>
             {
-                Edt[0] = await Discord.GetChannelAsync(623557669810077697);
-                Edt[1] = await Discord.GetChannelAsync(623557699497623602);
-                Edt[2] = await Discord.GetChannelAsync(623557716694138890);
-                Edt[3] = await Discord.GetChannelAsync(623557732930289664);
-                Edt[4] = await Discord.GetChannelAsync(623557762101542923);
-                Edt[5] = await Discord.GetChannelAsync(623557780527382530);
-                Edt[6] = await Discord.GetChannelAsync(623557795660431390);
-                Edt[7] = await Discord.GetChannelAsync(623557977223200798);
+                EdtChannel[0] = await Discord.GetChannelAsync(623557669810077697);
+                EdtChannel[1] = await Discord.GetChannelAsync(623557699497623602);
+                EdtChannel[2] = await Discord.GetChannelAsync(623557716694138890);
+                EdtChannel[3] = await Discord.GetChannelAsync(623557732930289664);
+                EdtChannel[4] = await Discord.GetChannelAsync(623557762101542923);
+                EdtChannel[5] = await Discord.GetChannelAsync(623557780527382530);
+                EdtChannel[6] = await Discord.GetChannelAsync(623557795660431390);
+                EdtChannel[7] = await Discord.GetChannelAsync(623557977223200798);
+
+                TPRoles[0] = DUTInfoServer.GetRole(619949947042791472);
+                TPRoles[1] = DUTInfoServer.GetRole(619949993096118292);
+                TPRoles[2] = DUTInfoServer.GetRole(619950016630358086);
+                TPRoles[3] = DUTInfoServer.GetRole(619950035895058432);
+                TPRoles[4] = DUTInfoServer.GetRole(619950048519913492);
+                TPRoles[5] = DUTInfoServer.GetRole(619950099807862794);
+                TPRoles[6] = DUTInfoServer.GetRole(619950111300255774);
+                TPRoles[7] = DUTInfoServer.GetRole(619950125573472262);
             });
-            //debug
-            ExecuteAsyncMethod(async () =>
-            {
-                Edt[0] = await Discord.GetChannelAsync(437704877221609474);
-                Edt[1] = await Discord.GetChannelAsync(437704877221609474);
-                Edt[2] = await Discord.GetChannelAsync(437704877221609474);
-                Edt[3] = await Discord.GetChannelAsync(437704877221609474);
-                Edt[4] = await Discord.GetChannelAsync(437704877221609474);
-                Edt[5] = await Discord.GetChannelAsync(437704877221609474);
-                Edt[6] = await Discord.GetChannelAsync(437704877221609474);
-                Edt[7] = await Discord.GetChannelAsync(437704877221609474);
-            });
+
+            if (DEBUG)
+                ExecuteAsyncMethod(async () =>
+                {
+                    EdtChannel[0] = await Discord.GetChannelAsync(437704877221609474);
+                    EdtChannel[1] = EdtChannel[0];
+                    EdtChannel[2] = EdtChannel[0];
+                    EdtChannel[3] = EdtChannel[0];
+                    EdtChannel[4] = EdtChannel[0];
+                    EdtChannel[5] = EdtChannel[0];
+                    EdtChannel[6] = EdtChannel[0];
+                    EdtChannel[7] = EdtChannel[0];
+
+                    TPRoles[0] = TestServer.GetRole(437705622507487233);
+                    TPRoles[1] = TPRoles[0];
+                    TPRoles[2] = TPRoles[0];
+                    TPRoles[3] = TPRoles[0];
+                    TPRoles[4] = TPRoles[0];
+                    TPRoles[5] = TPRoles[0];
+                    TPRoles[6] = TPRoles[0];
+                    TPRoles[7] = TPRoles[0];
+                });
 
             ///////////////////////////////////////
             Console.ForegroundColor = ConsoleColor.Green;
@@ -128,7 +154,6 @@ namespace InfoBot
         {
             while (true)
             {
-                Console.Write('>');
                 var input = Console.ReadLine();
                 ParseInput(input, out string command, out string[] args);
                 try
@@ -207,7 +232,7 @@ namespace InfoBot
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.WriteLine("Fatal error : " + e.ToString());
                 Console.ForegroundColor = DefaultColor;
-                returnValue = default(T);
+                returnValue = default;
                 return false;
             }
             return true;
@@ -221,12 +246,14 @@ namespace InfoBot
                 var defaultObj = new Save();
                 defaultObj.votes = new Vote[0];
                 defaultObj.polls = new Poll[0];
-                file.Write(JsonConvert.SerializeObject(defaultObj));
+                defaultObj.oldEdT = new int[8];
+                file.Write(JsonConvert.SerializeObject(defaultObj, Formatting.Indented));
                 file.Close();
             }
             var stream = new StreamReader("data.json");
             var obj = JsonConvert.DeserializeObject<Save>(stream.ReadToEnd());
             stream.Close();
+            OldICalHash = obj.oldEdT;
 
             foreach (var item in obj.votes)
             {
@@ -309,6 +336,7 @@ namespace InfoBot
         private static void SaveData()
         {
             var obj = new Save();
+            obj.oldEdT = OldICalHash;
             List<Vote> v = new List<Vote>();
             foreach (var item in Votes)
                 v.Add(new Vote()
@@ -336,15 +364,18 @@ namespace InfoBot
             }
             obj.polls = p.ToArray();
             var stream = new StreamWriter("data.json");
-            stream.Write(JsonConvert.SerializeObject(obj));
+            stream.Write(JsonConvert.SerializeObject(obj, Formatting.Indented));
             stream.Close();
         }
 
         private static void UpdateCalendars()
         {
-            DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
-            DateTime[] daysToDisplay = new DateTime[]
+            Console.WriteLine("Updating calendars...");
+            if (!DEBUG)
             {
+                DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
+                DateTime[] daysToDisplay = new DateTime[]
+                {
                 mondayThisWeek,
                 mondayThisWeek.AddDays(1),
                 mondayThisWeek.AddDays(2),
@@ -357,10 +388,65 @@ namespace InfoBot
                 mondayThisWeek.AddDays(10),
                 mondayThisWeek.AddDays(11),
                 mondayThisWeek.AddDays(12)
-            };
-            Console.WriteLine(mondayThisWeek);
-            for (int i = 0; i < Edt.Length; i++)
-            {
+                };
+                var stringICal = new string[CalendarUrl.Length];
+
+                for (int i = 0; i < CalendarUrl.Length; i++)
+                {
+                    try
+                    {
+                        stringICal[i] = Client.DownloadString(CalendarUrl[i]);
+                    }
+                    catch (Exception)
+                    {
+                        ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(TPRoles[i].Mention +
+@"
+Aucun emploi du temps trouvé, merci d'envoyer à Nathan le lien du ICalendar :
+allez ici : https://dptinfo.iutmetz.univ-lorraine.fr/lna/
+connectez vous
+cliquez sur ""emploi du temps""
+cliquez sur le qr code
+envoyez l'url complète qui s'affiche en MP, ainsi que votre groupe TP !"));
+                        continue;
+                    }
+                    Calendar calendar;
+                    try
+                    {
+                        calendar = Calendar.Load(stringICal[i]);
+                    }
+                    catch (Exception) { continue; }
+                    if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length)
+                    {
+                        IReadOnlyList<DiscordMessage> messages;
+                        ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
+                        if (messages != null)
+                        {
+                            foreach (var mess in messages)
+                            {
+                                if (mess.Author.IsCurrent)
+                                    ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
+                            }
+                        }
+                        ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps " + TPRoles[i].Mention + " :\n\n"));
+                        foreach (var day in daysToDisplay)
+                        {
+                            StringBuilder content = new StringBuilder();
+                            content.Append("**" + day.ToString("D") + "**\n```\n");
+                            var events = new List<CalendarEvent>(calendar.Events.Where((e) => e.Start.Date == day));
+                            events.Sort((l, r) => l.Start.CompareTo(r.Start));
+                            foreach (var ev in events)
+                            {
+                                content.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + "|" + ev.End.Minute.ToString("00") + " : ");
+                                content.Append(ev.Summary + "\n");
+                            }
+                            content.Append("```");
+                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(content.ToString()));
+                        }
+                        OldICalHash[i] = stringICal[i].Length;
+                    }
+                }
+                SaveData();
+                Console.WriteLine("Calendars updated");
             }
         }
 

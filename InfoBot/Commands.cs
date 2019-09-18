@@ -43,6 +43,7 @@ namespace InfoBot
     {
         #region Public Fields
 
+        public int[] oldEdT;
         public Poll[] polls;
         public Vote[] votes;
 
@@ -130,7 +131,7 @@ namespace InfoBot
             {
                 Dispatcher.Execute(async () =>
                 {
-                    if (arg.Message.Content.Length > 4 && arg.Message.Content.Substring(0, 4) == ">tb ")
+                    if (arg.Message.Content.Length > 4 && arg.Message.Content.Substring(0, 4) == ">ib ")
                     {
                         var input = arg.Message.Content.Substring(4, arg.Message.Content.Length - 4);
                         ParseInput(input, out string command, out string[] args);
