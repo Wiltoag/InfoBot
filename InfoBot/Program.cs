@@ -18,13 +18,15 @@ namespace InfoBot
     {
         #region Private Fields
 
-        private const bool DEBUG = false;
+        private const bool DEBUG = true;
 
         private static WebClient Client;
         private static ConsoleColor DefaultColor;
 
         private static DiscordGuild DUTInfoServer;
         private static DiscordChannel[] EdtChannel;
+        private static List<EdtDayMessage>[] EdTMessages;
+        private static DateTime LastSaveDate;
         private static int[] OldICalHash;
         private static DiscordGuild TestServer;
         private static DiscordRole[] TPRoles;
@@ -112,7 +114,7 @@ namespace InfoBot
                     EdtChannel[6] = EdtChannel[0];
                     EdtChannel[7] = EdtChannel[0];
 
-                    TPRoles[0] = TestServer.GetRole(623874435845324853);
+                    TPRoles[0] = DUTInfoServer.GetRole(623874435845324853);
                     TPRoles[1] = TPRoles[0];
                     TPRoles[2] = TPRoles[0];
                     TPRoles[3] = TPRoles[0];
@@ -121,6 +123,8 @@ namespace InfoBot
                     TPRoles[6] = TPRoles[0];
                     TPRoles[7] = TPRoles[0];
                 });
+            ExecuteAsyncMethod(async () => UpdateCalendars());
+            ExecuteAsyncMethod(() => UpdateEdtDay(true));
 
             ///////////////////////////////////////
             Console.ForegroundColor = ConsoleColor.Green;
@@ -129,7 +133,8 @@ namespace InfoBot
             consoleThread.Start();
 
             DateTimeOffset lastListCheck = DateTimeOffset.UnixEpoch;
-            DateTimeOffset lastCalendarCheck = DateTimeOffset.UnixEpoch;
+            DateTimeOffset lastCalendarCheck = DateTimeOffset.Now;
+            DateTimeOffset lastEdtDayCheck = DateTimeOffset.UnixEpoch;
 
             while (true)
             {
@@ -145,6 +150,11 @@ namespace InfoBot
                 {
                     lastCalendarCheck = DateTimeOffset.Now;
                     ExecuteAsyncMethod(async () => UpdateCalendars());
+                }
+                if (lastEdtDayCheck + TimeSpan.FromMinutes(1) < DateTimeOffset.Now)
+                {
+                    lastEdtDayCheck = DateTimeOffset.Now;
+                    ExecuteAsyncMethod(async () => UpdateEdtDay());
                 }
                 Thread.Sleep(TimeSpan.FromMilliseconds(50));
             }
@@ -247,6 +257,10 @@ namespace InfoBot
                 defaultObj.votes = new Vote[0];
                 defaultObj.polls = new Poll[0];
                 defaultObj.oldEdT = new int[8];
+                defaultObj.currentSaveTime = DateTime.Now;
+                defaultObj.edtMessages = new List<EdtDayMessage>[8];
+                for (int i = 0; i < 8; i++)
+                    defaultObj.edtMessages[i] = new List<EdtDayMessage>();
                 file.Write(JsonConvert.SerializeObject(defaultObj, Formatting.Indented));
                 file.Close();
             }
@@ -254,6 +268,7 @@ namespace InfoBot
             var obj = JsonConvert.DeserializeObject<Save>(stream.ReadToEnd());
             stream.Close();
             OldICalHash = obj.oldEdT;
+            EdTMessages = obj.edtMessages;
 
             foreach (var item in obj.votes)
             {
@@ -337,6 +352,9 @@ namespace InfoBot
         {
             var obj = new Save();
             obj.oldEdT = OldICalHash;
+            obj.edtMessages = EdTMessages;
+            obj.currentSaveTime = DateTime.Now;
+            LastSaveDate = obj.currentSaveTime;
             List<Vote> v = new List<Vote>();
             foreach (var item in Votes)
                 v.Add(new Vote()
@@ -371,7 +389,6 @@ namespace InfoBot
         private static void UpdateCalendars()
         {
             Console.WriteLine("Updating calendars...");
-            if (!DEBUG)
             {
                 DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
                 DateTime[] daysToDisplay = new DateTime[]
@@ -390,14 +407,20 @@ namespace InfoBot
                 mondayThisWeek.AddDays(12)
                 };
                 var stringICal = new string[CalendarUrl.Length];
+                var newEdtMessages = new List<EdtDayMessage>[8];
+                for (int i = 0; i < 8; i++)
+                    newEdtMessages[i] = new List<EdtDayMessage>();
 
-                for (int i = 5; i < /*CalendarUrl.Length*/6; i++)
+                for (int i = 0; i < (DEBUG ? 1 : CalendarUrl.Length); i++)
                 {
                     try
                     {
                         stringICal[i] = Client.DownloadString(CalendarUrl[i]);
                     }
-                    catch (Exception) { continue; }
+                    catch (Exception)
+                    {
+                        continue;
+                    }
                     if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length)
                     {
                         Calendar calendar;
@@ -405,7 +428,10 @@ namespace InfoBot
                         {
                             calendar = Calendar.Load(stringICal[i]);
                         }
-                        catch (Exception) { continue; }
+                        catch (Exception)
+                        {
+                            continue;
+                        }
                         IReadOnlyList<DiscordMessage> messages;
                         ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
                         if (messages != null)
@@ -419,38 +445,74 @@ namespace InfoBot
                         ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps " + TPRoles[i].Mention + " :\n\n"));
                         foreach (var day in daysToDisplay)
                         {
+                            var currEdtMessage = new EdtDayMessage();
+                            currEdtMessage.day = day;
                             var events = new List<CalendarEvent>(calendar.Events.Where((e) => e.Start.Date == day));
                             if (events.Count == 0)
                                 continue;
-                            StringBuilder content = new StringBuilder();
+                            StringBuilder contenthead = new StringBuilder();
                             if (day.DayOfWeek == DayOfWeek.Monday && mondayThisWeek != day)
-                                content.Append("\n`________________________________________________________________________________________________________________________`\n\n");
+                                contenthead.Append("\n`________________________________________________________________________________________________________________________`\n\n");
                             if (day.DayOfWeek == DayOfWeek.Saturday)
-                                content.Append("**" + day.ToString("D") + "** 💀\n```\n");
+                                contenthead.Append("**" + day.ToString("D") + "** 💀");
                             else
-                                content.Append("**" + day.ToString("D") + "**\n```\n");
+                                contenthead.Append("**" + day.ToString("D") + "**");
+                            currEdtMessage.description = contenthead.ToString();
+                            contenthead.Append("\n```\n");
                             events.Sort((l, r) => l.Start.CompareTo(r.Start));
+                            StringBuilder contentBuild = new StringBuilder();
                             foreach (var ev in events)
                             {
-                                content.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + ":" + ev.End.Minute.ToString("00") + " | ");
+                                contentBuild.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + ":" + ev.End.Minute.ToString("00") + " | ");
                                 var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
                                 for (int j = 0; j < splitted.Length; j++)
                                     splitted[j] = splitted[j].TrimStart().TrimEnd();
-                                content.Append(splitted[0] + ", " + splitted[3]);
+                                contentBuild.Append(splitted[0] + ", " + splitted[3]);
                                 if (splitted.Length == 5)
-                                    content.Append(", " + splitted[4]);
-                                content.Append('\n');
+                                    contentBuild.Append(", " + splitted[4]);
+                                contentBuild.Append("\n");
                             }
-                            content.Append("```");
-                            if (day.DayOfWeek == DayOfWeek.Friday)
-                                content.Append('\n');
-                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(content.ToString()));
+                            currEdtMessage.content = contentBuild.ToString();
+                            contenthead.Append(contentBuild);
+                            contenthead.Append("```");
+                            DiscordMessage mess;
+                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(contenthead.ToString()), out mess);
+                            currEdtMessage.message = new SpecialMessage() { channel = mess.ChannelId, id = mess.Id };
+                            newEdtMessages[i].Add(currEdtMessage);
                         }
                         OldICalHash[i] = stringICal[i].Length;
                     }
+                    else
+                        newEdtMessages[i] = EdTMessages[i];
                 }
+                EdTMessages = newEdtMessages;
+
                 SaveData();
                 Console.WriteLine("Calendars updated");
+            }
+        }
+
+        private static async Task UpdateEdtDay(bool force = false)
+        {
+            if (DateTime.Today > LastSaveDate.Date || force)
+            {
+                for (int i = 0; i < 8; i++)
+                {
+                    var group = EdTMessages[i];
+                    if (group.Any((dm) => dm.day == LastSaveDate.Date))
+                    {
+                        var oldHighlighted = group.Find((dm) => dm.day == LastSaveDate.Date);
+                        var oldMess = await (await Discord.GetChannelAsync(oldHighlighted.message.channel)).GetMessageAsync(oldHighlighted.message.id);
+                        await oldMess.ModifyAsync(oldHighlighted.description + "\n```\n" + oldHighlighted.content + "```");
+                    }
+                    if (group.Any((dm) => dm.day == DateTime.Today))
+                    {
+                        var newHighlighted = group.Find((dm) => dm.day == LastSaveDate.Date);
+                        var newMess = await (await Discord.GetChannelAsync(newHighlighted.message.channel)).GetMessageAsync(newHighlighted.message.id);
+                        await newMess.ModifyAsync(newHighlighted.description + "\n```fix\n" + newHighlighted.content + "```");
+                    }
+                }
+                SaveData();
             }
         }
 

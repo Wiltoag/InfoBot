@@ -8,6 +8,18 @@ using DSharpPlus.Entities;
 
 namespace InfoBot
 {
+    internal struct EdtDayMessage
+    {
+        #region Public Fields
+
+        public string content;
+        public DateTime day;
+        public string description;
+        public SpecialMessage message;
+
+        #endregion Public Fields
+    }
+
     internal struct Poll
     {
         #region Public Fields
@@ -39,10 +51,22 @@ namespace InfoBot
         #endregion Public Structs
     }
 
+    internal struct Range
+    {
+        #region Private Fields
+
+        private float max;
+        private float min;
+
+        #endregion Private Fields
+    }
+
     internal struct Save
     {
         #region Public Fields
 
+        public DateTime currentSaveTime;
+        public List<EdtDayMessage>[] edtMessages;
         public int[] oldEdT;
         public Poll[] polls;
         public Vote[] votes;
