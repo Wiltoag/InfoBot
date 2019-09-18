@@ -24,10 +24,10 @@ namespace InfoBot
     {
         #region Public Fields
 
+        public ulong author;
         public Choice[] choices;
-
         public TimeSpan duration;
-
+        public ulong id;
         public SpecialMessage message;
 
         public bool open;
@@ -88,7 +88,9 @@ namespace InfoBot
     {
         #region Public Fields
 
+        public ulong author;
         public TimeSpan duration;
+        public ulong id;
         public SpecialMessage message;
         public bool showUsers;
 
@@ -99,7 +101,9 @@ namespace InfoBot
     {
         #region Public Properties
 
+        public ulong Author { get; set; }
         public List<Tuple<string, DiscordEmoji>> Choices { get; set; }
+        public ulong ID { get; set; }
         public TimeSpan Lifetime { get; set; }
         public DiscordMessage Message { get; set; }
         public bool Open { get; set; }
@@ -112,6 +116,8 @@ namespace InfoBot
     {
         #region Public Properties
 
+        public ulong Author { get; set; }
+        public ulong ID { get; set; }
         public TimeSpan Lifetime { get; set; }
         public DiscordMessage Message { get; set; }
         public bool ShowUsers { get; set; }
@@ -124,6 +130,7 @@ namespace InfoBot
         #region Public Properties
 
         public static DiscordEmoji Downvote { get; set; }
+        public static Random Random { get; set; }
         public static DiscordEmoji Upvote { get; set; }
 
         #endregion Public Properties
@@ -172,12 +179,16 @@ vote <question> [-d<duration (hours)>] [-u]                  start a vote (upvot
 figgle <text>                                   change the text into ascii art.
 
 poll <question> <open|closed> [-d<duration (hours)>] [-u] [<option1>] [<emoji1>] ...    start a poll with multiple choices. open if the choices can be multiple, otherwise closed. By default 24h. Use -u if the users are shown at the end.
+finish <vote/poll id>                                       end the selected vote/poll to instantly show the results
 ```");
                                 break;
 
                             case "vote":
                                 {
-                                    string content = args[0];
+                                    var buff = new byte[8];
+                                    Random.NextBytes(buff);
+                                    ulong id = BitConverter.ToUInt64(buff);
+                                    string content = args[0] + " \nid:" + id;
                                     TimeSpan duration = TimeSpan.FromHours(24);
                                     bool showUsers = false;
                                     if (args.Length > 1)
@@ -195,7 +206,7 @@ poll <question> <open|closed> [-d<duration (hours)>] [-u] [<option1>] [<emoji1>]
                                     {
                                         await message.CreateReactionAsync(Upvote);
                                         await message.CreateReactionAsync(Downvote);
-                                        Votes.Add(new VoteMessage() { Message = message, Lifetime = duration, ShowUsers = showUsers });
+                                        Votes.Add(new VoteMessage() { Author = arg.Author.Id, ID = id, Message = message, Lifetime = duration, ShowUsers = showUsers });
                                         SaveData();
                                     }
                                 }
@@ -206,9 +217,38 @@ poll <question> <open|closed> [-d<duration (hours)>] [-u] [<option1>] [<emoji1>]
                                 await arg.Channel.SendMessageAsync("```\n" + Figgle.FiggleFonts.Standard.Render(toFiggle) + "\n```");
                                 break;
 
+                            case "finish":
+                                {
+                                    var toFinish = ulong.Parse(args[0]);
+                                    foreach (var item in Votes)
+                                    {
+                                        if (item.ID == toFinish)
+                                        {
+                                            if (arg.Author.Id == item.Author || (await arg.Guild.GetMemberAsync(arg.Author.Id)).PermissionsIn(arg.Channel) == Permissions.Administrator)
+                                                item.Lifetime = TimeSpan.Zero;
+                                            else
+                                                await arg.Channel.SendMessageAsync("Tu n'es pas assez digne !");
+                                        }
+                                    }
+                                    foreach (var item in Polls)
+                                    {
+                                        if (item.ID == toFinish)
+                                        {
+                                            if (arg.Author.Id == item.Author || (await arg.Guild.GetMemberAsync(arg.Author.Id)).PermissionsIn(arg.Channel) == Permissions.Administrator)
+                                                item.Lifetime = TimeSpan.Zero;
+                                            else
+                                                await arg.Channel.SendMessageAsync("Tu n'es pas assez digne !");
+                                        }
+                                    }
+                                }
+                                break;
+
                             case "poll":
                                 {
-                                    var question = args[0];
+                                    var buff = new byte[8];
+                                    Random.NextBytes(buff);
+                                    ulong idPoll = BitConverter.ToUInt64(buff);
+                                    var question = args[0] + "\nid:" + idPoll;
                                     bool open = args[1] == "open";
                                     bool showUsers = false;
                                     TimeSpan duration = TimeSpan.FromHours(24);
@@ -261,7 +301,9 @@ poll <question> <open|closed> [-d<duration (hours)>] [-u] [<option1>] [<emoji1>]
                                         Lifetime = duration,
                                         Message = message,
                                         ShowUsers = showUsers,
-                                        Open = open
+                                        Open = open,
+                                        Author = arg.Author.Id,
+                                        ID = idPoll
                                     });
                                     SaveData();
                                     foreach (var item in reactions)

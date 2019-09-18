@@ -18,7 +18,7 @@ namespace InfoBot
     {
         #region Private Fields
 
-        private const bool DEBUG = true;
+        private const bool DEBUG = false;
 
         private static WebClient Client;
         private static ConsoleColor DefaultColor;
@@ -72,6 +72,7 @@ namespace InfoBot
             Console.WriteLine("Initalization...");
             ///////////////////////////////////////
 
+            Random = new Random();
             Dispatcher = new Dispatcher();
             var consoleThread = new Thread(ConsoleManager);
             if (!ExecuteAsyncMethod(() => Discord.GetGuildAsync(619513574850560010), out DUTInfoServer))
@@ -273,6 +274,7 @@ namespace InfoBot
             foreach (var item in obj.votes)
             {
                 var vote = new VoteMessage();
+                vote.ID = item.id;
                 vote.Lifetime = item.duration;
                 vote.ShowUsers = item.showUsers;
                 DiscordChannel chan;
@@ -280,17 +282,20 @@ namespace InfoBot
                 DiscordMessage mess;
                 ExecuteAsyncMethod(() => chan.GetMessageAsync(item.message.id), out mess);
                 vote.Message = mess;
+                vote.Author = item.author;
                 Votes.Add(vote);
             }
             foreach (var item in obj.polls)
             {
                 var poll = new PollMessage();
+                poll.ID = item.id;
                 poll.Lifetime = item.duration;
                 poll.ShowUsers = item.showUsers;
                 DiscordChannel chan;
                 ExecuteAsyncMethod(() => Discord.GetChannelAsync(item.message.channel), out chan);
                 DiscordMessage mess;
                 ExecuteAsyncMethod(() => chan.GetMessageAsync(item.message.id), out mess);
+                poll.Author = item.author;
                 poll.Message = mess;
                 poll.Open = item.open;
                 poll.Choices = new List<Tuple<string, DiscordEmoji>>();
@@ -359,6 +364,8 @@ namespace InfoBot
             foreach (var item in Votes)
                 v.Add(new Vote()
                 {
+                    id = item.ID,
+                    author = item.Author,
                     duration = item.Lifetime,
                     showUsers = item.ShowUsers,
                     message = new SpecialMessage() { channel = item.Message.ChannelId, id = item.Message.Id }
@@ -373,6 +380,8 @@ namespace InfoBot
 
                 p.Add(new Poll()
                 {
+                    id = item.ID,
+                    author = item.Author,
                     duration = item.Lifetime,
                     showUsers = item.ShowUsers,
                     open = item.Open,
