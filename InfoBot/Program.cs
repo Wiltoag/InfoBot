@@ -103,7 +103,7 @@ namespace InfoBot
             if (DEBUG)
                 ExecuteAsyncMethod(async () =>
                 {
-                    EdtChannel[0] = await Discord.GetChannelAsync(437704877221609474);
+                    EdtChannel[0] = await Discord.GetChannelAsync(623874313539289125);
                     EdtChannel[1] = EdtChannel[0];
                     EdtChannel[2] = EdtChannel[0];
                     EdtChannel[3] = EdtChannel[0];
@@ -112,7 +112,7 @@ namespace InfoBot
                     EdtChannel[6] = EdtChannel[0];
                     EdtChannel[7] = EdtChannel[0];
 
-                    TPRoles[0] = TestServer.GetRole(437705622507487233);
+                    TPRoles[0] = TestServer.GetRole(623874435845324853);
                     TPRoles[1] = TPRoles[0];
                     TPRoles[2] = TPRoles[0];
                     TPRoles[3] = TPRoles[0];
@@ -391,32 +391,21 @@ namespace InfoBot
                 };
                 var stringICal = new string[CalendarUrl.Length];
 
-                for (int i = 0; i < CalendarUrl.Length; i++)
+                for (int i = 5; i < /*CalendarUrl.Length*/6; i++)
                 {
                     try
                     {
                         stringICal[i] = Client.DownloadString(CalendarUrl[i]);
                     }
-                    catch (Exception)
-                    {
-                        ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(TPRoles[i].Mention +
-@"
-Aucun emploi du temps trouvé, merci d'envoyer à Nathan le lien du ICalendar :
-allez ici : https://dptinfo.iutmetz.univ-lorraine.fr/lna/
-connectez vous
-cliquez sur ""emploi du temps""
-cliquez sur le qr code
-envoyez l'url complète qui s'affiche en MP, ainsi que votre groupe TP !"));
-                        continue;
-                    }
-                    Calendar calendar;
-                    try
-                    {
-                        calendar = Calendar.Load(stringICal[i]);
-                    }
                     catch (Exception) { continue; }
                     if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length)
                     {
+                        Calendar calendar;
+                        try
+                        {
+                            calendar = Calendar.Load(stringICal[i]);
+                        }
+                        catch (Exception) { continue; }
                         IReadOnlyList<DiscordMessage> messages;
                         ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
                         if (messages != null)
@@ -430,16 +419,31 @@ envoyez l'url complète qui s'affiche en MP, ainsi que votre groupe TP !"));
                         ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps " + TPRoles[i].Mention + " :\n\n"));
                         foreach (var day in daysToDisplay)
                         {
-                            StringBuilder content = new StringBuilder();
-                            content.Append("**" + day.ToString("D") + "**\n```\n");
                             var events = new List<CalendarEvent>(calendar.Events.Where((e) => e.Start.Date == day));
+                            if (events.Count == 0)
+                                continue;
+                            StringBuilder content = new StringBuilder();
+                            if (day.DayOfWeek == DayOfWeek.Monday && mondayThisWeek != day)
+                                content.Append("\n`________________________________________________________________________________________________________________________`\n\n");
+                            if (day.DayOfWeek == DayOfWeek.Saturday)
+                                content.Append("**" + day.ToString("D") + "** 💀\n```\n");
+                            else
+                                content.Append("**" + day.ToString("D") + "**\n```\n");
                             events.Sort((l, r) => l.Start.CompareTo(r.Start));
                             foreach (var ev in events)
                             {
-                                content.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + "|" + ev.End.Minute.ToString("00") + " : ");
-                                content.Append(ev.Summary + "\n");
+                                content.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + ":" + ev.End.Minute.ToString("00") + " | ");
+                                var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
+                                for (int j = 0; j < splitted.Length; j++)
+                                    splitted[j] = splitted[j].TrimStart().TrimEnd();
+                                content.Append(splitted[0] + ", " + splitted[3]);
+                                if (splitted.Length == 5)
+                                    content.Append(", " + splitted[4]);
+                                content.Append('\n');
                             }
                             content.Append("```");
+                            if (day.DayOfWeek == DayOfWeek.Friday)
+                                content.Append('\n');
                             ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(content.ToString()));
                         }
                         OldICalHash[i] = stringICal[i].Length;
