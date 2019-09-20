@@ -155,7 +155,7 @@ namespace InfoBot
                 if (lastEdtDayCheck + TimeSpan.FromMinutes(1) < DateTimeOffset.Now)
                 {
                     lastEdtDayCheck = DateTimeOffset.Now;
-                    ExecuteAsyncMethod(async () => UpdateEdtDay());
+                    ExecuteAsyncMethod(async () => await UpdateEdtDay());
                 }
                 Thread.Sleep(TimeSpan.FromMilliseconds(50));
             }
@@ -451,7 +451,7 @@ namespace InfoBot
                                     ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
                             }
                         }
-                        ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps " + TPRoles[i].Mention + " :\n\n"));
+                        ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps :\n\n"));
                         foreach (var day in daysToDisplay)
                         {
                             var currEdtMessage = new EdtDayMessage();
