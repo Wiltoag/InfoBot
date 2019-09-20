@@ -359,7 +359,6 @@ namespace InfoBot
             obj.oldEdT = OldICalHash;
             obj.edtMessages = EdTMessages;
             obj.currentSaveTime = DateTime.Now;
-            LastSaveDate = obj.currentSaveTime;
             List<Vote> v = new List<Vote>();
             foreach (var item in Votes)
                 v.Add(new Vote()
@@ -516,11 +515,12 @@ namespace InfoBot
                     }
                     if (group.Any((dm) => dm.day == DateTime.Today))
                     {
-                        var newHighlighted = group.Find((dm) => dm.day == LastSaveDate.Date);
+                        var newHighlighted = group.Find((dm) => dm.day == DateTime.Today);
                         var newMess = await (await Discord.GetChannelAsync(newHighlighted.message.channel)).GetMessageAsync(newHighlighted.message.id);
                         await newMess.ModifyAsync(newHighlighted.description + "\n```fix\n" + newHighlighted.content + "```");
                     }
                 }
+                LastSaveDate = DateTime.Now;
                 SaveData();
             }
         }
