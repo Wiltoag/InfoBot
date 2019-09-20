@@ -126,6 +126,17 @@ namespace InfoBot
                 });
             ExecuteAsyncMethod(async () => UpdateCalendars());
             ExecuteAsyncMethod(() => UpdateEdtDay(true));
+            Discord.MessageCreated += async (arg) =>
+            {
+                Dispatcher.Execute(async () =>
+                {
+                    ExecuteAsyncMethod(async () =>
+                    {
+                        if (arg.Message.Content.ToLower().Contains("creeper"))
+                            await arg.Message.RespondAsync("AW MAN !");
+                    });
+                });
+            };
 
             ///////////////////////////////////////
             Console.ForegroundColor = ConsoleColor.Green;
