@@ -178,9 +178,18 @@ vote <question> [-d<duration (hours)>] [-u]                  start a vote (upvot
 
 figgle <text>                                   change the text into ascii art.
 
-poll <question> <open|closed> [-d<duration (hours)>] [-u] [<option1>] [<emoji1>] ...    start a poll with multiple choices. open if the choices can be multiple, otherwise closed. By default 24h. Use -u if the users are shown at the end.
+poll <question> open|closed [-d<duration (hours)>] [-u] [<option1>] [<emoji1>] ...    start a poll with multiple choices. open if the choices can be multiple, otherwise closed. By default 24h. Use -u if the users are shown at the end.
 finish <vote/poll id>                                       end the selected vote/poll to instantly show the results
+template <name> poll|vote <poll/vote command>                  create a template for a poll/vote which you can call later using the ""call"" command
+call <name>                                     start the poll/vote saved under the <name>
+lt                                          display all the saved templates
+rt <name>                                   remove a saved template
+ct <origin> <target>                                copy a template under another name
+automate <poll/vote name> <hour> [<delay>]
 ```");
+                                break;
+
+                            case "template":
                                 break;
 
                             case "vote":
