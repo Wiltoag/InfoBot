@@ -16,6 +16,13 @@ namespace InfoBot
 {
     internal partial class Program
     {
+        #region Public Fields
+
+        public static List<SavedPoll> SavedPolls;
+        public static List<SavedVote> SavedVotes;
+
+        #endregion Public Fields
+
         #region Private Fields
 
         private const bool DEBUG = false;
@@ -124,8 +131,6 @@ namespace InfoBot
                     TPRoles[6] = TPRoles[0];
                     TPRoles[7] = TPRoles[0];
                 });
-            ExecuteAsyncMethod(async () => UpdateCalendars());
-            ExecuteAsyncMethod(() => UpdateEdtDay(true));
             Discord.MessageCreated += async (arg) =>
             {
                 Dispatcher.Execute(async () =>
@@ -134,6 +139,32 @@ namespace InfoBot
                     {
                         if (arg.Message.Content.ToLower().Contains("creeper"))
                             await arg.Message.RespondAsync("AW MAN !");
+                    });
+                });
+            };
+            Discord.MessageCreated += async (arg) =>
+            {
+                Dispatcher.Execute(async () =>
+                {
+                    ExecuteAsyncMethod(async () =>
+                    {
+                        var content = arg.Message.Content;
+                        content = content.ToLower();
+                        var newStr = "";
+                        foreach (var c in content)
+                        {
+                            if (c != ' ' && c != '\'')
+                            {
+                                if (c == 'é')
+                                    newStr += 'e';
+                                else if (c == 'û')
+                                    newStr += 'u';
+                                else
+                                    newStr += c;
+                            }
+                        }
+                        if (newStr.Contains("cetaitsur"))
+                            await arg.Message.RespondAsync("https://cdn.discordapp.com/attachments/619513575295418392/625709998692892682/sardoche.gif");
                     });
                 });
             };
@@ -162,11 +193,6 @@ namespace InfoBot
                 {
                     lastCalendarCheck = DateTimeOffset.Now;
                     ExecuteAsyncMethod(async () => UpdateCalendars());
-                }
-                if (lastEdtDayCheck + TimeSpan.FromMinutes(1) < DateTimeOffset.Now)
-                {
-                    lastEdtDayCheck = DateTimeOffset.Now;
-                    ExecuteAsyncMethod(async () => await UpdateEdtDay());
                 }
                 Thread.Sleep(TimeSpan.FromMilliseconds(50));
             }

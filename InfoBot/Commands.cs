@@ -8,6 +8,17 @@ using DSharpPlus.Entities;
 
 namespace InfoBot
 {
+    internal struct Autorun
+    {
+        #region Public Fields
+
+        public DateTime baseTime;
+        public TimeSpan delay;
+        public string name;
+
+        #endregion Public Fields
+    }
+
     internal struct EdtDayMessage
     {
         #region Public Fields
@@ -69,7 +80,29 @@ namespace InfoBot
         public List<EdtDayMessage>[] edtMessages;
         public int[] oldEdT;
         public Poll[] polls;
+        public SavedPoll[] savedPolls;
+        public SavedVote[] savedVotes;
         public Vote[] votes;
+
+        #endregion Public Fields
+    }
+
+    internal struct SavedPoll
+    {
+        #region Public Fields
+
+        public string name;
+        public Poll vote;
+
+        #endregion Public Fields
+    }
+
+    internal struct SavedVote
+    {
+        #region Public Fields
+
+        public string name;
+        public Vote vote;
 
         #endregion Public Fields
     }
@@ -185,7 +218,8 @@ call <name>                                     start the poll/vote saved under 
 lt                                          display all the saved templates
 rt <name>                                   remove a saved template
 ct <origin> <target>                                copy a template under another name
-automate <poll/vote name> <hour> [<delay>]
+automate <poll/vote name> [<hour>] [<delay>]            automate a saved poll/vote at <hour>, every <delay>. by default, the automation begins when the command is done and delayed by 24h. units are in hours.
+stopauto <name>                             stop the automated poll/vote
 ```");
                                 break;
 
