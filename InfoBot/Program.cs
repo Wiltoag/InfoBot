@@ -35,6 +35,8 @@ namespace InfoBot
         private static List<EdtDayMessage>[] EdTMessages;
         private static DateTime LastSaveDate;
         private static int[] OldICalHash;
+        private static int RevengeCurrLine;
+        private static string[] revengeLines;
         private static DiscordGuild TestServer;
         private static DiscordRole[] TPRoles;
 
@@ -54,6 +56,21 @@ namespace InfoBot
 
         private static async Task AsyncMain(string[] args)
         {
+            RevengeCurrLine = 0;
+            using (var stream = new StreamReader("revenge.txt"))
+            {
+                var lines = new List<string>();
+                bool end = false;
+                while (!end)
+                {
+                    var line = stream.ReadLine();
+                    if (line == null)
+                        end = true;
+                    else
+                        lines.Add(line);
+                }
+                revengeLines = lines.ToArray();
+            }
             CalendarUrl = new string[8];
             TPRoles = new DiscordRole[8];
             CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=e81e5e310001831"; //1.1
@@ -137,17 +154,6 @@ namespace InfoBot
                 {
                     ExecuteAsyncMethod(async () =>
                     {
-                        if (arg.Message.Content.ToLower().Contains("creeper"))
-                            await arg.Message.RespondAsync("AW MAN !");
-                    });
-                });
-            };
-            Discord.MessageCreated += async (arg) =>
-            {
-                Dispatcher.Execute(async () =>
-                {
-                    ExecuteAsyncMethod(async () =>
-                    {
                         var content = arg.Message.Content;
                         content = content.ToLower();
                         var newStr = "";
@@ -165,6 +171,29 @@ namespace InfoBot
                         }
                         if (newStr.Contains("cetaitsur"))
                             await arg.Message.RespondAsync("https://cdn.discordapp.com/attachments/619513575295418392/625709998692892682/sardoche.gif");
+                    });
+                });
+            };
+            Discord.MessageCreated += async (arg) =>
+            {
+                Dispatcher.Execute(async () =>
+                {
+                    ExecuteAsyncMethod(async () =>
+                    {
+                        var content = GetSimplifiedString(arg.Message.Content);
+                        if (content.Contains(GetSimplifiedString(revengeLines[RevengeCurrLine])) && !arg.Author.IsBot)
+                        {
+                            RevengeCurrLine += 2;
+                            if (RevengeCurrLine - 1 < revengeLines.Length)
+                                await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
+                            else
+                                RevengeCurrLine = 0;
+                        }
+                        else if (content.Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
+                        {
+                            RevengeCurrLine = 2;
+                            await arg.Message.RespondAsync(revengeLines[1]);
+                        }
                     });
                 });
             };
@@ -284,6 +313,18 @@ namespace InfoBot
                 return false;
             }
             return true;
+        }
+
+        private static string GetSimplifiedString(string str)
+        {
+            str = str.ToLower();
+            var newStr = "";
+            foreach (var c in str)
+            {
+                if (char.IsLetter(c))
+                    newStr += c;
+            }
+            return newStr;
         }
 
         private static void LoadData()
