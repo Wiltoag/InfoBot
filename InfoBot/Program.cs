@@ -80,7 +80,7 @@ namespace InfoBot
             CalendarUrl[4] = ""; //3.1
             CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=b4a52df5e501843"; //3.2
             CalendarUrl[6] = ""; //4.1
-            CalendarUrl[7] = ""; //4.2
+            CalendarUrl[7] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=3a1ee9527101771"; //4.2
             Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
             string token;
