@@ -194,6 +194,8 @@ namespace InfoBot
                             RevengeCurrLine = 2;
                             await arg.Message.RespondAsync(revengeLines[1]);
                         }
+                        if (content.Contains("69") || content.Contains("420"))
+                            await arg.Message.RespondAsync("nice");
                     });
                 });
             };
@@ -205,7 +207,7 @@ namespace InfoBot
             consoleThread.Start();
 
             DateTimeOffset lastListCheck = DateTimeOffset.UnixEpoch;
-            DateTimeOffset lastCalendarCheck = DateTimeOffset.Now;
+            DateTimeOffset lastCalendarCheck = DateTimeOffset.UnixEpoch;
             DateTimeOffset lastEdtDayCheck = DateTimeOffset.UnixEpoch;
 
             while (true)
