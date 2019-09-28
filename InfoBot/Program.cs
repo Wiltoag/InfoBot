@@ -340,7 +340,7 @@ namespace InfoBot
             var newStr = "";
             foreach (var c in str)
             {
-                if (char.IsLetter(c))
+                if (char.IsLetterOrDigit(c))
                     newStr += c;
             }
             return newStr;
@@ -778,3 +778,4 @@ namespace InfoBot
 
         #endregion Private Methods
     }
+}
