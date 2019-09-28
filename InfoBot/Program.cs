@@ -16,20 +16,12 @@ namespace InfoBot
 {
     internal partial class Program
     {
-        #region Public Fields
-
-        public static List<SavedPoll> SavedPolls;
-        public static List<SavedVote> SavedVotes;
-
-        #endregion Public Fields
-
         #region Private Fields
 
         private const bool DEBUG = false;
-
+        private static List<Autorun> Autoruns;
         private static WebClient Client;
         private static ConsoleColor DefaultColor;
-
         private static DiscordGuild DUTInfoServer;
         private static DiscordChannel[] EdtChannel;
         private static List<EdtDayMessage>[] EdTMessages;
@@ -37,6 +29,8 @@ namespace InfoBot
         private static int[] OldICalHash;
         private static int RevengeCurrLine;
         private static string[] revengeLines;
+        private static List<SavedPoll> SavedPolls;
+        private static List<SavedVote> SavedVotes;
         private static DiscordGuild TestServer;
         private static DiscordRole[] TPRoles;
 
@@ -194,6 +188,8 @@ namespace InfoBot
                             RevengeCurrLine = 2;
                             await arg.Message.RespondAsync(revengeLines[1]);
                         }
+                        if (content.Contains("69") || content.Contains("420"))
+                            await arg.Message.RespondAsync("nice");
                     });
                 });
             };
@@ -205,7 +201,7 @@ namespace InfoBot
             consoleThread.Start();
 
             DateTimeOffset lastListCheck = DateTimeOffset.UnixEpoch;
-            DateTimeOffset lastCalendarCheck = DateTimeOffset.Now;
+            DateTimeOffset lastCalendarCheck = DateTimeOffset.UnixEpoch;
             DateTimeOffset lastEdtDayCheck = DateTimeOffset.UnixEpoch;
 
             while (true)
@@ -315,6 +311,29 @@ namespace InfoBot
             return true;
         }
 
+        private static string GetCode(DiscordEmoji emoji)
+        {
+            if (emoji.RequireColons)
+                return "<" + emoji.GetDiscordName() + emoji.Id + ">";
+            else
+                return emoji.Name;
+        }
+
+        private static DiscordEmoji GetEmoji(string code)
+        {
+            DiscordEmoji emoji;
+            try
+            {
+                var id = code.Split(':').Last();
+                emoji = DiscordEmoji.FromGuildEmote(Discord, ulong.Parse(id.Substring(0, id.Length - 1)));
+            }
+            catch (Exception)
+            {
+                emoji = DiscordEmoji.FromUnicode(Discord, code);
+            }
+            return emoji;
+        }
+
         private static string GetSimplifiedString(string str)
         {
             str = str.ToLower();
@@ -378,10 +397,22 @@ namespace InfoBot
                 poll.Open = item.open;
                 poll.Choices = new List<Tuple<string, DiscordEmoji>>();
                 foreach (var item2 in item.choices)
-                    poll.Choices.Add(new Tuple<string, DiscordEmoji>(item2.name, DiscordEmoji.FromGuildEmote(Discord, item2.id)));
+                    poll.Choices.Add(new Tuple<string, DiscordEmoji>(item2.name, GetEmoji(item2.id)));
 
                 Polls.Add(poll);
             }
+            if (obj.savedVotes != null)
+                SavedVotes = new List<SavedVote>(obj.savedVotes);
+            else
+                SavedVotes = new List<SavedVote>();
+            if (obj.savedPolls != null)
+                SavedPolls = new List<SavedPoll>(obj.savedPolls);
+            else
+                SavedPolls = new List<SavedPoll>();
+            if (obj.autoruns != null)
+                Autoruns = new List<Autorun>(obj.autoruns);
+            else
+                Autoruns = new List<Autorun>();
         }
 
         private static void Main(string[] args)
@@ -434,6 +465,9 @@ namespace InfoBot
         private static void SaveData()
         {
             var obj = new Save();
+            obj.savedPolls = SavedPolls.ToArray();
+            obj.savedVotes = SavedVotes.ToArray();
+            obj.autoruns = Autoruns.ToArray();
             obj.oldEdT = OldICalHash;
             obj.edtMessages = EdTMessages;
             obj.currentSaveTime = DateTime.Now;
@@ -451,9 +485,9 @@ namespace InfoBot
             List<Poll> p = new List<Poll>();
             foreach (var item in Polls)
             {
-                List<Poll.Choice> choices = new List<Poll.Choice>();
+                List<Choice> choices = new List<Choice>();
                 foreach (var item2 in item.Choices)
-                    choices.Add(new Poll.Choice() { id = item2.Item2.Id, name = item2.Item1 });
+                    choices.Add(new Choice() { id = GetCode(item2.Item2), name = item2.Item1 });
 
                 p.Add(new Poll()
                 {
@@ -474,11 +508,13 @@ namespace InfoBot
 
         private static void UpdateCalendars()
         {
-            Console.WriteLine("Updating calendars...");
+            if (!DEBUG)
             {
-                DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
-                DateTime[] daysToDisplay = new DateTime[]
+                Console.WriteLine("Updating calendars...");
                 {
+                    DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
+                    DateTime[] daysToDisplay = new DateTime[]
+                    {
                 mondayThisWeek,
                 mondayThisWeek.AddDays(1),
                 mondayThisWeek.AddDays(2),
@@ -491,115 +527,91 @@ namespace InfoBot
                 mondayThisWeek.AddDays(10),
                 mondayThisWeek.AddDays(11),
                 mondayThisWeek.AddDays(12)
-                };
-                var stringICal = new string[CalendarUrl.Length];
-                var newEdtMessages = new List<EdtDayMessage>[8];
-                for (int i = 0; i < 8; i++)
-                    newEdtMessages[i] = new List<EdtDayMessage>();
+                    };
+                    var stringICal = new string[CalendarUrl.Length];
+                    var newEdtMessages = new List<EdtDayMessage>[8];
+                    for (int i = 0; i < 8; i++)
+                        newEdtMessages[i] = new List<EdtDayMessage>();
 
-                for (int i = 0; i < (DEBUG ? 1 : CalendarUrl.Length); i++)
-                {
-                    try
+                    for (int i = 0; i < (DEBUG ? 1 : CalendarUrl.Length); i++)
                     {
-                        stringICal[i] = Client.DownloadString(CalendarUrl[i]);
-                    }
-                    catch (Exception)
-                    {
-                        continue;
-                    }
-                    if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length)
-                    {
-                        Calendar calendar;
                         try
                         {
-                            calendar = Calendar.Load(stringICal[i]);
+                            stringICal[i] = Client.DownloadString(CalendarUrl[i]);
                         }
                         catch (Exception)
                         {
                             continue;
                         }
-                        IReadOnlyList<DiscordMessage> messages;
-                        ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
-                        if (messages != null)
+                        if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length)
                         {
-                            foreach (var mess in messages)
+                            Calendar calendar;
+                            try
                             {
-                                if (mess.Author.IsCurrent)
-                                    ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
+                                calendar = Calendar.Load(stringICal[i]);
                             }
-                        }
-                        ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps :\n\n"));
-                        foreach (var day in daysToDisplay)
-                        {
-                            var currEdtMessage = new EdtDayMessage();
-                            currEdtMessage.day = day;
-                            var events = new List<CalendarEvent>(calendar.Events.Where((e) => e.Start.Date == day));
-                            if (events.Count == 0)
+                            catch (Exception)
+                            {
                                 continue;
-                            StringBuilder contenthead = new StringBuilder();
-                            if (day.DayOfWeek == DayOfWeek.Monday && mondayThisWeek != day)
-                                contenthead.Append("\n`________________________________________________________________________________________________________________________`\n\n");
-                            if (day.DayOfWeek == DayOfWeek.Saturday)
-                                contenthead.Append("**" + day.ToString("D") + "** 💀");
-                            else
-                                contenthead.Append("**" + day.ToString("D") + "**");
-                            currEdtMessage.description = contenthead.ToString();
-                            contenthead.Append("\n```\n");
-                            events.Sort((l, r) => l.Start.CompareTo(r.Start));
-                            StringBuilder contentBuild = new StringBuilder();
-                            foreach (var ev in events)
-                            {
-                                contentBuild.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + ":" + ev.End.Minute.ToString("00") + " | ");
-                                var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
-                                for (int j = 0; j < splitted.Length; j++)
-                                    splitted[j] = splitted[j].TrimStart().TrimEnd();
-                                contentBuild.Append(splitted[0] + ", " + splitted[3]);
-                                if (splitted.Length == 5)
-                                    contentBuild.Append(", " + splitted[4]);
-                                contentBuild.Append("\n");
                             }
-                            currEdtMessage.content = contentBuild.ToString();
-                            contenthead.Append(contentBuild);
-                            contenthead.Append("```");
-                            DiscordMessage mess;
-                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(contenthead.ToString()), out mess);
-                            currEdtMessage.message = new SpecialMessage() { channel = mess.ChannelId, id = mess.Id };
-                            newEdtMessages[i].Add(currEdtMessage);
+                            IReadOnlyList<DiscordMessage> messages;
+                            ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
+                            if (messages != null)
+                            {
+                                foreach (var mess in messages)
+                                {
+                                    if (mess.Author.IsCurrent)
+                                        ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
+                                }
+                            }
+                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps :\n\n"));
+                            foreach (var day in daysToDisplay)
+                            {
+                                var currEdtMessage = new EdtDayMessage();
+                                currEdtMessage.day = day;
+                                var events = new List<CalendarEvent>(calendar.Events.Where((e) => e.Start.Date == day));
+                                if (events.Count == 0)
+                                    continue;
+                                StringBuilder contenthead = new StringBuilder();
+                                if (day.DayOfWeek == DayOfWeek.Monday && mondayThisWeek != day)
+                                    contenthead.Append("\n`________________________________________________________________________________________________________________________`\n\n");
+                                if (day.DayOfWeek == DayOfWeek.Saturday)
+                                    contenthead.Append("**" + day.ToString("D") + "** 💀");
+                                else
+                                    contenthead.Append("**" + day.ToString("D") + "**");
+                                currEdtMessage.description = contenthead.ToString();
+                                contenthead.Append("\n```\n");
+                                events.Sort((l, r) => l.Start.CompareTo(r.Start));
+                                StringBuilder contentBuild = new StringBuilder();
+                                foreach (var ev in events)
+                                {
+                                    contentBuild.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + ":" + ev.End.Minute.ToString("00") + " | ");
+                                    var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
+                                    for (int j = 0; j < splitted.Length; j++)
+                                        splitted[j] = splitted[j].TrimStart().TrimEnd();
+                                    contentBuild.Append(splitted[0] + ", " + splitted[3]);
+                                    if (splitted.Length == 5)
+                                        contentBuild.Append(", " + splitted[4]);
+                                    contentBuild.Append("\n");
+                                }
+                                currEdtMessage.content = contentBuild.ToString();
+                                contenthead.Append(contentBuild);
+                                contenthead.Append("```");
+                                DiscordMessage mess;
+                                ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(contenthead.ToString()), out mess);
+                                currEdtMessage.message = new SpecialMessage() { channel = mess.ChannelId, id = mess.Id };
+                                newEdtMessages[i].Add(currEdtMessage);
+                            }
+                            OldICalHash[i] = stringICal[i].Length;
                         }
-                        OldICalHash[i] = stringICal[i].Length;
+                        else
+                            newEdtMessages[i] = EdTMessages[i];
                     }
-                    else
-                        newEdtMessages[i] = EdTMessages[i];
-                }
-                EdTMessages = newEdtMessages;
+                    EdTMessages = newEdtMessages;
 
-                SaveData();
-                Console.WriteLine("Calendars updated");
-            }
-        }
-
-        private static async Task UpdateEdtDay(bool force = false)
-        {
-            if (DateTime.Today > LastSaveDate.Date || force)
-            {
-                for (int i = 0; i < 8; i++)
-                {
-                    var group = EdTMessages[i];
-                    if (group.Any((dm) => dm.day == LastSaveDate.Date))
-                    {
-                        var oldHighlighted = group.Find((dm) => dm.day == LastSaveDate.Date);
-                        var oldMess = await (await Discord.GetChannelAsync(oldHighlighted.message.channel)).GetMessageAsync(oldHighlighted.message.id);
-                        await oldMess.ModifyAsync(oldHighlighted.description + "\n```\n" + oldHighlighted.content + "```");
-                    }
-                    if (group.Any((dm) => dm.day == DateTime.Today))
-                    {
-                        var newHighlighted = group.Find((dm) => dm.day == DateTime.Today);
-                        var newMess = await (await Discord.GetChannelAsync(newHighlighted.message.channel)).GetMessageAsync(newHighlighted.message.id);
-                        await newMess.ModifyAsync(newHighlighted.description + "\n```fix\n" + newHighlighted.content + "```");
-                    }
+                    SaveData();
+                    Console.WriteLine("Calendars updated");
                 }
-                LastSaveDate = DateTime.Now;
-                SaveData();
             }
         }
 
@@ -695,6 +707,70 @@ namespace InfoBot
                     }
                     ExecuteAsyncMethod(() => item.Message.Channel.SendMessageAsync(content.ToString()));
                     await item.Message.DeleteAsync();
+                }
+            }
+            for (int i = 0; i < Autoruns.Count; i++)
+            {
+                var auto = Autoruns[i];
+                if (auto.baseTime + auto.delay < DateTime.Now)
+                {
+                    auto.baseTime += auto.delay;
+                    Autoruns[i] = auto;
+                    var channel = await Discord.GetChannelAsync(auto.channel);
+                    if (SavedVotes.Any((s) => s.name == auto.name))
+                    {
+                        var saved = SavedVotes.Find((s) => s.name == auto.name);
+                        var buff = new byte[8];
+                        Random.NextBytes(buff);
+                        ulong id = BitConverter.ToUInt64(buff);
+                        string content = saved.content + " \nid:" + id;
+                        DiscordMessage message;
+                        message = await channel.SendMessageAsync(content);
+                        {
+                            await message.CreateReactionAsync(Upvote);
+                            await message.CreateReactionAsync(Downvote);
+                            Votes.Add(new VoteMessage() { Author = auto.author, ID = id, Message = message, Lifetime = saved.duration, ShowUsers = saved.showUsers });
+                            SaveData();
+                        }
+                    }
+                    else if (SavedPolls.Any((s) => s.name == auto.name))
+                    {
+                        var saved = SavedPolls.Find((s) => s.name == auto.name);
+                        var buff = new byte[8];
+                        Random.NextBytes(buff);
+                        ulong idPoll = BitConverter.ToUInt64(buff);
+                        var question = saved.content + "\nid:" + idPoll;
+                        List<Tuple<string, DiscordEmoji>> reactions = new List<Tuple<string, DiscordEmoji>>();
+                        for (int j = 0; j < saved.choices.Length; j++)
+                        {
+                            var choice = saved.choices[j];
+                            reactions.Add(new Tuple<string, DiscordEmoji>(choice.name, GetEmoji(choice.id)));
+                        }
+                        var builder = new StringBuilder();
+                        builder.Append(question + "\n");
+                        foreach (var item in reactions)
+                        {
+                            if (item.Item2.RequireColons)
+                                builder.Append("<" + item.Item2.GetDiscordName() + item.Item2.Id + "> : " + item.Item1 + "\n");
+                            else
+                                builder.Append(item.Item2.Name + " : " + item.Item1 + "\n");
+                        }
+
+                        var message = await channel.SendMessageAsync(builder.ToString());
+                        Polls.Add(new PollMessage()
+                        {
+                            Choices = reactions,
+                            Lifetime = saved.duration,
+                            Message = message,
+                            ShowUsers = saved.showUsers,
+                            Open = saved.open,
+                            Author = auto.author,
+                            ID = idPoll
+                        });
+                        foreach (var item in reactions)
+                            await message.CreateReactionAsync(item.Item2);
+                        SaveData();
+                    }
                 }
             }
             SaveData();
