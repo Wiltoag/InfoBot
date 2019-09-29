@@ -62,6 +62,8 @@ namespace InfoBot
 
         private static async Task AsyncMain(string[] args)
         {
+            while (true)
+                Console.WriteLine(RemoveDiacritics(Console.ReadLine()));
             RevengeCurrLine = 0;
             using (var stream = new StreamReader("revenge.txt"))
             {
@@ -187,8 +189,7 @@ namespace InfoBot
                     ExecuteAsyncMethod(async () =>
                     {
                         var content = GetSimplifiedString(arg.Message.Content);
-                        Console.WriteLine(CalculateSimilarity(content, revengeLines[RevengeCurrLine]));
-                        if ((content.Contains(GetSimplifiedString(revengeLines[RevengeCurrLine])) || CalculateSimilarity(content, GetSimplifiedString(revengeLines[RevengeCurrLine])) >= .75f) && !arg.Author.IsBot)
+                        if (EvaluateWholeStringSimilarity(arg.Message.Content, revengeLines[RevengeCurrLine]) >= .7 && !arg.Author.IsBot)
                         {
                             RevengeCurrLine += 2;
                             if (RevengeCurrLine - 1 < revengeLines.Length)
@@ -335,6 +336,20 @@ namespace InfoBot
             }
         }
 
+        private static double EvaluateWholeStringSimilarity(string content, string origin)
+        {
+            content = GetSimplifiedString(content);
+            origin = GetSimplifiedString(origin);
+            double highest = 0;
+            int i = 0;
+            do
+            {
+                highest = Math.Max(CalculateSimilarity(content.Substring(i, Math.Min(origin.Length, content.Length - i)), origin), highest);
+                i++;
+            } while (i <= content.Length - origin.Length);
+            return highest;
+        }
+
         private static bool ExecuteAsyncMethod(Func<Task> func)
         {
             try
@@ -397,7 +412,7 @@ namespace InfoBot
 
         private static string GetSimplifiedString(string str)
         {
-            str = str.ToLower();
+            str = RemoveDiacritics(str).ToLower();
             var newStr = "";
             foreach (var c in str)
             {
@@ -521,6 +536,24 @@ namespace InfoBot
             if (currArg.Length > 0)
                 listArgs.Add(currArg);
             args = listArgs.ToArray();
+        }
+
+        private static string RemoveDiacritics(string text)
+        {
+            //https://stackoverflow.com/a/249126
+            var normalizedString = text.Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
+            }
+
+            return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
 
         private static void SaveData()
