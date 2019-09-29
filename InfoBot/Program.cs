@@ -62,8 +62,6 @@ namespace InfoBot
 
         private static async Task AsyncMain(string[] args)
         {
-            while (true)
-                Console.WriteLine(RemoveDiacritics(Console.ReadLine()));
             RevengeCurrLine = 0;
             using (var stream = new StreamReader("revenge.txt"))
             {
