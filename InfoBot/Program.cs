@@ -187,7 +187,8 @@ namespace InfoBot
                     ExecuteAsyncMethod(async () =>
                     {
                         var content = GetSimplifiedString(arg.Message.Content);
-                        if ((content.Contains(GetSimplifiedString(revengeLines[RevengeCurrLine])) || CalculateSimilarity(content, revengeLines[RevengeCurrLine]) >= .75f) && !arg.Author.IsBot && RevengeCurrLine > 0)
+                        Console.WriteLine(CalculateSimilarity(content, revengeLines[RevengeCurrLine]));
+                        if ((content.Contains(GetSimplifiedString(revengeLines[RevengeCurrLine])) || CalculateSimilarity(content, GetSimplifiedString(revengeLines[RevengeCurrLine])) >= .75f) && !arg.Author.IsBot)
                         {
                             RevengeCurrLine += 2;
                             if (RevengeCurrLine - 1 < revengeLines.Length)
