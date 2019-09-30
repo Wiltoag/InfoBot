@@ -431,7 +431,7 @@ lauto                                       display all the current automated te
                                         var buff = new byte[8];
                                         Random.NextBytes(buff);
                                         ulong id = BitConverter.ToUInt64(buff);
-                                        string content = saved.content + " \nid:" + id;
+                                        string content = saved.content + " \n||id:" + id + "||";
                                         DiscordMessage message;
                                         message = await arg.Message.RespondAsync(content);
                                         {
@@ -447,7 +447,7 @@ lauto                                       display all the current automated te
                                         var buff = new byte[8];
                                         Random.NextBytes(buff);
                                         ulong idPoll = BitConverter.ToUInt64(buff);
-                                        var question = saved.content + "\nid:" + idPoll;
+                                        var question = saved.content + "\n||id:" + idPoll + "||";
                                         List<Tuple<string, DiscordEmoji>> reactions = new List<Tuple<string, DiscordEmoji>>();
                                         for (int i = 0; i < saved.choices.Length; i++)
                                         {
@@ -586,7 +586,7 @@ lauto                                       display all the current automated te
                                     var buff = new byte[8];
                                     Random.NextBytes(buff);
                                     ulong id = BitConverter.ToUInt64(buff);
-                                    string content = args[0] + " \nid:" + id;
+                                    string content = args[0] + " \n||id:" + id + "||";
                                     TimeSpan duration = TimeSpan.FromHours(24);
                                     bool showUsers = false;
                                     if (args.Length > 1)
@@ -646,7 +646,7 @@ lauto                                       display all the current automated te
                                     var buff = new byte[8];
                                     Random.NextBytes(buff);
                                     ulong idPoll = BitConverter.ToUInt64(buff);
-                                    var question = args[0] + "\nid:" + idPoll;
+                                    var question = args[0] + "\n||id:" + idPoll + "||";
                                     bool open = args[1] == "open";
                                     bool showUsers = false;
                                     TimeSpan duration = TimeSpan.FromHours(24);

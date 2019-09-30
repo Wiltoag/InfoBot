@@ -18,7 +18,7 @@ namespace InfoBot
     {
         #region Private Fields
 
-        private const bool DEBUG = false;
+        private const bool DEBUG = true;
 
         private static List<Autorun> Autoruns;
 
@@ -815,7 +815,7 @@ namespace InfoBot
                         var buff = new byte[8];
                         Random.NextBytes(buff);
                         ulong id = BitConverter.ToUInt64(buff);
-                        string content = saved.content + " \nid:" + id;
+                        string content = saved.content + " \n||id:" + id + "||";
                         DiscordMessage message;
                         message = await channel.SendMessageAsync(content);
                         {
@@ -831,7 +831,7 @@ namespace InfoBot
                         var buff = new byte[8];
                         Random.NextBytes(buff);
                         ulong idPoll = BitConverter.ToUInt64(buff);
-                        var question = saved.content + "\nid:" + idPoll;
+                        var question = saved.content + "\n||id:" + idPoll + "||";
                         List<Tuple<string, DiscordEmoji>> reactions = new List<Tuple<string, DiscordEmoji>>();
                         for (int j = 0; j < saved.choices.Length; j++)
                         {
