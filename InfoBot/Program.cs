@@ -85,7 +85,7 @@ namespace InfoBot
             CalendarUrl[3] = ""; //2.2
             CalendarUrl[4] = ""; //3.1
             CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=b4a52df5e501843"; //3.2
-            CalendarUrl[6] = ""; //4.1
+            CalendarUrl[6] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=561e49e97901779"; //4.1
             CalendarUrl[7] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=3a1ee9527101771"; //4.2
             Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
