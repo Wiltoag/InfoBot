@@ -200,7 +200,7 @@ namespace InfoBot
                             RevengeCurrLine = 2;
                             await arg.Message.RespondAsync(revengeLines[1]);
                         }
-                        if (content.Contains(" 69 ") || content.Contains(" 420 "))
+                        if (content.Contains("69") || content.Contains("420"))
                             await arg.Message.RespondAsync("nice");
                     });
                 });
