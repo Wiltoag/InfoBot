@@ -18,7 +18,7 @@ namespace InfoBot
     {
         #region Private Fields
 
-        private const bool DEBUG = true;
+        private const bool DEBUG = false;
 
         private static List<Autorun> Autoruns;
 
