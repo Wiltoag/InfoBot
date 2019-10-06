@@ -18,7 +18,7 @@ namespace InfoBot
     {
         #region Private Fields
 
-        private const bool DEBUG = false;
+        private const bool DEBUG = true;
 
         private static List<Autorun> Autoruns;
 
@@ -26,6 +26,8 @@ namespace InfoBot
 
         private static ConsoleColor DefaultColor;
 
+        private static int DejavuCurrLine;
+        private static string[] dejavuLines;
         private static DiscordGuild DUTInfoServer;
 
         private static DiscordChannel[] EdtChannel;
@@ -35,9 +37,7 @@ namespace InfoBot
         private static int[] OldICalHash;
 
         private static int RevengeCurrLine;
-
         private static string[] revengeLines;
-
         private static List<SavedPoll> SavedPolls;
 
         private static List<SavedVote> SavedVotes;
@@ -63,6 +63,7 @@ namespace InfoBot
         private static async Task AsyncMain(string[] args)
         {
             RevengeCurrLine = 0;
+            DejavuCurrLine = 0;
             using (var stream = new StreamReader("revenge.txt"))
             {
                 var lines = new List<string>();
@@ -76,6 +77,20 @@ namespace InfoBot
                         lines.Add(line);
                 }
                 revengeLines = lines.ToArray();
+            }
+            using (var stream = new StreamReader("dejavu.txt"))
+            {
+                var lines = new List<string>();
+                bool end = false;
+                while (!end)
+                {
+                    var line = stream.ReadLine();
+                    if (line == null)
+                        end = true;
+                    else
+                        lines.Add(line);
+                }
+                dejavuLines = lines.ToArray();
             }
             CalendarUrl = new string[8];
             TPRoles = new DiscordRole[8];
@@ -199,6 +214,24 @@ namespace InfoBot
                         {
                             RevengeCurrLine = 2;
                             await arg.Message.RespondAsync(revengeLines[1]);
+                        }
+                        if (EvaluateWholeStringSimilarity(arg.Message.Content, dejavuLines[DejavuCurrLine]) >= .7 && !arg.Author.IsBot)
+                        {
+                            DejavuCurrLine += 2;
+                            if (DejavuCurrLine - 1 < dejavuLines.Length)
+                                await arg.Message.RespondAsync(dejavuLines[DejavuCurrLine - 1]);
+                            else
+                                DejavuCurrLine = 0;
+                        }
+                        else if (content.Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
+                        {
+                            DejavuCurrLine = 10;
+                            await arg.Message.RespondAsync(dejavuLines[9]);
+                        }
+                        else if (EvaluateWholeStringSimilarity(arg.Message.Content, dejavuLines[0]) >= .7 && !arg.Author.IsBot)
+                        {
+                            DejavuCurrLine = 2;
+                            await arg.Message.RespondAsync(dejavuLines[1]);
                         }
                         if (content.Contains("69") || content.Contains("420"))
                             await arg.Message.RespondAsync("nice");
