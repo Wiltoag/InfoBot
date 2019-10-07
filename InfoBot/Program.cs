@@ -23,17 +23,13 @@ namespace InfoBot
         private static List<Autorun> Autoruns;
 
         private static WebClient Client;
-
         private static ConsoleColor DefaultColor;
-
         private static int DejavuCurrLine;
         private static string[] dejavuLines;
         private static DiscordGuild DUTInfoServer;
-
         private static DiscordChannel[] EdtChannel;
-
         private static List<EdtDayMessage>[] EdTMessages;
-
+        private static DateTime LastEdtCheck;
         private static int[] OldICalHash;
 
         private static int RevengeCurrLine;
@@ -463,9 +459,7 @@ namespace InfoBot
                 defaultObj.polls = new Poll[0];
                 defaultObj.oldEdT = new int[8];
                 defaultObj.currentSaveTime = DateTime.Now;
-                defaultObj.edtMessages = new List<EdtDayMessage>[8];
-                for (int i = 0; i < 8; i++)
-                    defaultObj.edtMessages[i] = new List<EdtDayMessage>();
+                defaultObj.lastEdtCheck = DateTime.Now;
                 file.Write(JsonConvert.SerializeObject(defaultObj, Formatting.Indented));
                 file.Close();
             }
@@ -473,6 +467,7 @@ namespace InfoBot
             var obj = JsonConvert.DeserializeObject<Save>(stream.ReadToEnd());
             stream.Close();
             OldICalHash = obj.oldEdT;
+            LastEdtCheck = obj.lastEdtCheck;
 
             foreach (var item in obj.votes)
             {
@@ -589,6 +584,7 @@ namespace InfoBot
         private static void SaveData()
         {
             var obj = new Save();
+            obj.lastEdtCheck = LastEdtCheck;
             obj.savedPolls = SavedPolls.ToArray();
             obj.savedVotes = SavedVotes.ToArray();
             obj.autoruns = Autoruns.ToArray();
@@ -655,7 +651,7 @@ namespace InfoBot
                     var newEdtMessages = new List<EdtDayMessage>[8];
                     for (int i = 0; i < 8; i++)
                         newEdtMessages[i] = new List<EdtDayMessage>();
-
+                    var newWeek = ((int)DateTime.Today.DayOfWeek - 1) % 7 < ((int)LastEdtCheck.DayOfWeek - 1) % 7;
                     for (int i = 0; i < (DEBUG ? 1 : CalendarUrl.Length); i++)
                     {
                         try
@@ -666,7 +662,7 @@ namespace InfoBot
                         {
                             continue;
                         }
-                        if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length)
+                        if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length || newWeek)
                         {
                             Calendar calendar;
                             try
@@ -731,7 +727,7 @@ namespace InfoBot
                             newEdtMessages[i] = EdTMessages[i];
                     }
                     EdTMessages = newEdtMessages;
-
+                    LastEdtCheck = DateTime.Now;
                     SaveData();
                     Console.WriteLine("Calendars updated");
                 }
