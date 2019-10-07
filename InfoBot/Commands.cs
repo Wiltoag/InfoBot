@@ -8,6 +8,9 @@ using DSharpPlus.Entities;
 
 namespace InfoBot
 {
+    /// <summary>
+    /// Save class to keep autoruns
+    /// </summary>
     internal struct Autorun
     {
         #region Public Fields
@@ -21,6 +24,10 @@ namespace InfoBot
         #endregion Public Fields
     }
 
+    /// <summary>
+    /// Save class to keep choices (reactions availables for polls)
+    /// </summary>
+
     internal struct Choice
     {
         #region Public Fields
@@ -31,17 +38,9 @@ namespace InfoBot
         #endregion Public Fields
     }
 
-    internal struct EdtDayMessage
-    {
-        #region Public Fields
-
-        public string content;
-        public DateTime day;
-        public string description;
-        public SpecialMessage message;
-
-        #endregion Public Fields
-    }
+    /// <summary>
+    /// Save class to keep polls
+    /// </summary>
 
     internal struct Poll
     {
@@ -60,6 +59,9 @@ namespace InfoBot
         #endregion Public Fields
     }
 
+    /// <summary>
+    /// unused class for now, maybe i'll use it one day
+    /// </summary>
     internal struct Range
     {
         #region Private Fields
@@ -70,6 +72,9 @@ namespace InfoBot
         #endregion Private Fields
     }
 
+    /// <summary>
+    /// main class stored in data.json
+    /// </summary>
     internal struct Save
     {
         #region Public Fields
@@ -86,6 +91,10 @@ namespace InfoBot
         #endregion Public Fields
     }
 
+    /// <summary>
+    /// Save class to keep template polls
+    /// </summary>
+
     internal struct SavedPoll
     {
         #region Public Fields
@@ -101,6 +110,10 @@ namespace InfoBot
         #endregion Public Fields
     }
 
+    /// <summary>
+    /// Save class to keep template votes
+    /// </summary>
+
     internal struct SavedVote
     {
         #region Public Fields
@@ -114,6 +127,10 @@ namespace InfoBot
         #endregion Public Fields
     }
 
+    /// <summary>
+    /// Save class to keep messages that are important to retrieve
+    /// </summary>
+
     internal struct SpecialMessage
     {
         #region Public Fields
@@ -123,6 +140,10 @@ namespace InfoBot
 
         #endregion Public Fields
     }
+
+    /// <summary>
+    /// Save class to keep votes
+    /// </summary>
 
     internal struct Vote
     {
@@ -137,29 +158,57 @@ namespace InfoBot
         #endregion Public Fields
     }
 
+    /// <summary>
+    /// class for current polls
+    /// </summary>
     public class PollMessage
     {
         #region Public Properties
 
+        /// <summary>
+        /// ... id of the author
+        /// </summary>
         public ulong Author { get; set; }
+
+        /// <summary>
+        /// list of available reactions and their description
+        /// </summary>
         public List<Tuple<string, DiscordEmoji>> Choices { get; set; }
+
         public ulong ID { get; set; }
         public TimeSpan Lifetime { get; set; }
+
+        /// <summary>
+        /// Message of the poll
+        /// </summary>
         public DiscordMessage Message { get; set; }
+
         public bool Open { get; set; }
         public bool ShowUsers { get; set; }
 
         #endregion Public Properties
     }
 
+    /// <summary>
+    /// class for current votes
+    /// </summary>
     public class VoteMessage
     {
         #region Public Properties
 
+        /// <summary>
+        /// ...
+        /// </summary>
         public ulong Author { get; set; }
+
         public ulong ID { get; set; }
         public TimeSpan Lifetime { get; set; }
+
+        /// <summary>
+        /// message of the vote
+        /// </summary>
         public DiscordMessage Message { get; set; }
+
         public bool ShowUsers { get; set; }
 
         #endregion Public Properties
@@ -170,22 +219,38 @@ namespace InfoBot
         #region Public Properties
 
         public static DiscordEmoji Downvote { get; set; }
+
+        /// <summary>
+        /// randomizer.
+        /// </summary>
         public static Random Random { get; set; }
+
         public static DiscordEmoji Upvote { get; set; }
 
         #endregion Public Properties
 
         #region Private Properties
 
+        /// <summary>
+        /// active polls
+        /// </summary>
         private static List<PollMessage> Polls { get; set; }
+
+        /// <summary>
+        /// active votes
+        /// </summary>
         private static List<VoteMessage> Votes { get; set; }
 
         #endregion Private Properties
 
         #region Private Methods
 
+        /// <summary>
+        /// Here we initiate the commands declaration
+        /// </summary>
         private static void InitCommands()
         {
+            //these declarations don't belong here, i know
             Votes = new List<VoteMessage>();
             Polls = new List<PollMessage>();
             if (DUTInfoServer != null)
@@ -202,6 +267,7 @@ namespace InfoBot
             {
                 Dispatcher.Execute(async () =>
                 {
+                    //if we detect a command using the prefix
                     if (arg.Message.Content.Length > 4 && arg.Message.Content.Substring(0, 4) == ">ib ")
                     {
                         var input = arg.Message.Content.Substring(4, arg.Message.Content.Length - 4);
@@ -258,10 +324,14 @@ lauto                                       display all the current automated te
 
                             case "stopauto":
                                 {
+                                    //we stop the autorun given in paramter
+                                    //this line is used to identify a template by its id, which is the id of the server AND the name of the template.
+                                    //This won't be commented after this point
                                     string codedName = arg.Guild.Id.ToString() + ":" + args[0];
                                     if (Autoruns.Any(s => s.name == codedName))
                                     {
                                         var toRemove = Autoruns.FirstOrDefault((s) => s.name == codedName);
+                                        //we test if the user has the rights to stop the autorun
                                         if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
                                             Autoruns.RemoveAll((s) => s.name == codedName);
                                         else
@@ -277,6 +347,7 @@ lauto                                       display all the current automated te
                                     builder.Append("**Automations :**");
                                     foreach (var item in Autoruns)
                                     {
+                                        //we just display all the current autoruns
                                         if (item.name.Split(':').First() == arg.Guild.Id.ToString())
                                             builder.Append("\n  -  __" + item.name.Split(':').Last() + "__ by " + (await arg.Guild.GetMemberAsync(arg.Author.Id)).Nickname + ", delayed by " + item.delay.TotalHours + "h, next call : " + (item.baseTime + item.delay).ToString());
                                     }
@@ -296,11 +367,14 @@ lauto                                       display all the current automated te
                                     auto.channel = arg.Channel.Id;
                                     auto.name = codedName;
                                     auto.author = arg.Author.Id;
+                                    //if the delay is specified, we parse it
                                     auto.delay = args.Length > 1 ? TimeSpan.FromHours(double.Parse(args[1].Replace('.', ','))) : TimeSpan.FromDays(1);
                                     auto.baseTime = DateTime.Now - auto.delay;
                                     if (args.Length > 2)
                                     {
+                                        //if a starting hour is given, we parse it
                                         var hours = double.Parse(args[2].Replace('.', ','));
+                                        //i kinda forgot how this works, but it checks that it will start at the moment
                                         auto.baseTime = hours > (DateTime.Now - DateTime.Today).TotalHours ?
                                                             DateTime.Today - auto.delay + TimeSpan.FromHours(hours) :
                                                             DateTime.Today + TimeSpan.FromHours(hours);
@@ -317,8 +391,10 @@ lauto                                       display all the current automated te
                                     string targetCode = arg.Guild.Id.ToString() + ":" + args[1];
                                     string originCode = arg.Guild.Id.ToString() + ":" + args[0];
                                     {
+                                        //basic copy paste template, idk why you would use it tho
                                         if (SavedVotes.Any(s => s.name == targetCode))
                                         {
+                                            //if it's a vote
                                             var toRemove = SavedVotes.First((s) => s.name == targetCode);
                                             if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
                                                 SavedVotes.RemoveAll((s) => s.name == targetCode);
@@ -332,6 +408,7 @@ lauto                                       display all the current automated te
                                     {
                                         if (SavedPolls.Any(s => s.name == targetCode))
                                         {
+                                            //if it's a poll
                                             var toRemove = SavedPolls.FirstOrDefault((s) => s.name == targetCode);
                                             if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
                                                 SavedPolls.RemoveAll((s) => s.name == targetCode);
@@ -342,6 +419,7 @@ lauto                                       display all the current automated te
                                             }
                                         }
                                     }
+                                    //and we copy it
                                     if (SavedVotes.Any(s => s.name == originCode))
                                     {
                                         var toCopy = SavedVotes.First((s) => s.name == originCode);
@@ -375,25 +453,24 @@ lauto                                       display all the current automated te
                             case "rt":
                                 {
                                     string codedName = arg.Guild.Id.ToString() + ":" + args[0];
+                                    //here we delete a template
+                                    if (SavedVotes.Any(s => s.name == codedName))
                                     {
-                                        if (SavedVotes.Any(s => s.name == codedName))
-                                        {
-                                            var toRemove = SavedVotes.First((s) => s.name == codedName);
-                                            if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
-                                                SavedVotes.RemoveAll((s) => s.name == codedName);
-                                            else
-                                                await arg.Message.RespondAsync("Error : You don't have the permission");
-                                        }
+                                        //if it's a vote
+                                        var toRemove = SavedVotes.First((s) => s.name == codedName);
+                                        if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
+                                            SavedVotes.RemoveAll((s) => s.name == codedName);
+                                        else
+                                            await arg.Message.RespondAsync("Error : You don't have the permission");
                                     }
+                                    if (SavedPolls.Any(s => s.name == codedName))
                                     {
-                                        if (SavedPolls.Any(s => s.name == codedName))
-                                        {
-                                            var toRemove = SavedPolls.FirstOrDefault((s) => s.name == codedName);
-                                            if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
-                                                SavedPolls.RemoveAll((s) => s.name == codedName);
-                                            else
-                                                await arg.Message.RespondAsync("Error : You don't have the permission");
-                                        }
+                                        //if it's a poll
+                                        var toRemove = SavedPolls.FirstOrDefault((s) => s.name == codedName);
+                                        if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
+                                            SavedPolls.RemoveAll((s) => s.name == codedName);
+                                        else
+                                            await arg.Message.RespondAsync("Error : You don't have the permission");
                                     }
                                     SaveData();
                                 }
@@ -403,6 +480,7 @@ lauto                                       display all the current automated te
                                 {
                                     var builder = new StringBuilder();
                                     builder.Append("**Votes** :");
+                                    //we basically displays vote templates and poll templates
                                     foreach (var item in SavedVotes)
                                     {
                                         if (arg.Guild.Id.ToString() == item.name.Split(':').First())
@@ -424,9 +502,11 @@ lauto                                       display all the current automated te
 
                             case "call":
                                 {
+                                    //we call a vote template / poll template
                                     string codedName = arg.Guild.Id.ToString() + ":" + args[0];
                                     if (SavedVotes.Any((s) => s.name == codedName))
                                     {
+                                        //if it's a vote
                                         var saved = SavedVotes.Find((s) => s.name == codedName);
                                         var buff = new byte[8];
                                         Random.NextBytes(buff);
@@ -443,6 +523,7 @@ lauto                                       display all the current automated te
                                     }
                                     else if (SavedPolls.Any((s) => s.name == codedName))
                                     {
+                                        //if it's a poll
                                         var saved = SavedPolls.Find((s) => s.name == codedName);
                                         var buff = new byte[8];
                                         Random.NextBytes(buff);
@@ -486,10 +567,12 @@ lauto                                       display all the current automated te
 
                             case "template":
                                 {
+                                    //we simply create a template
                                     string codedName = arg.Guild.Id.ToString() + ":" + args[0];
                                     {
                                         if (SavedVotes.Any(s => s.name == codedName))
                                         {
+                                            //if a template vote already has a name for it
                                             var toRemove = SavedVotes.First((s) => s.name == codedName);
                                             if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
                                                 SavedVotes.RemoveAll((s) => s.name == codedName);
@@ -503,6 +586,7 @@ lauto                                       display all the current automated te
                                     {
                                         if (SavedPolls.Any(s => s.name == codedName))
                                         {
+                                            //if a template poll already has a name for it
                                             var toRemove = SavedPolls.FirstOrDefault((s) => s.name == codedName);
                                             if (toRemove.author == arg.Author.Id || arg.Channel.PermissionsFor(await arg.Guild.GetMemberAsync(arg.Author.Id)) == Permissions.Administrator)
                                                 SavedPolls.RemoveAll((s) => s.name == codedName);
@@ -544,6 +628,7 @@ lauto                                       display all the current automated te
                                 {
                                     var toSave = new SavedPoll();
                                     {
+                                        //good lord wtf is this spaghetti
                                         bool open = args[1] == "open";
                                         bool showUsers = false;
                                         TimeSpan duration = TimeSpan.FromHours(24);
@@ -583,8 +668,10 @@ lauto                                       display all the current automated te
 
                             case "vote":
                                 {
+                                    //we create a vote
                                     var buff = new byte[8];
                                     Random.NextBytes(buff);
+                                    //here we just generate an id for the vote
                                     ulong id = BitConverter.ToUInt64(buff);
                                     string content = args[0] + " \n||id:" + id + "||";
                                     TimeSpan duration = TimeSpan.FromHours(24);
@@ -620,8 +707,10 @@ lauto                                       display all the current automated te
                                     var toFinish = ulong.Parse(args[0]);
                                     foreach (var item in Votes)
                                     {
+                                        //if it's a vote to finish
                                         if (item.ID == toFinish)
                                         {
+                                            //we literally sets its lifetime to zero so he dies instantly lol
                                             if (arg.Author.Id == item.Author || (await arg.Guild.GetMemberAsync(arg.Author.Id)).PermissionsIn(arg.Channel) == Permissions.Administrator)
                                                 item.Lifetime = TimeSpan.Zero;
                                             else
@@ -630,6 +719,7 @@ lauto                                       display all the current automated te
                                     }
                                     foreach (var item in Polls)
                                     {
+                                        //if it's a poll to finish
                                         if (item.ID == toFinish)
                                         {
                                             if (arg.Author.Id == item.Author || (await arg.Guild.GetMemberAsync(arg.Author.Id)).PermissionsIn(arg.Channel) == Permissions.Administrator)
@@ -643,6 +733,7 @@ lauto                                       display all the current automated te
 
                             case "poll":
                                 {
+                                    //we create a poll, and i'm not in the mood to comment this part, it just works
                                     var buff = new byte[8];
                                     Random.NextBytes(buff);
                                     ulong idPoll = BitConverter.ToUInt64(buff);
@@ -707,19 +798,23 @@ lauto                                       display all the current automated te
             };
             Discord.MessageReactionAdded += async (arg) =>
             {
+                //this is triggered for the vote/poll, when a reaction has been added
                 Dispatcher.Execute(async () =>
                 {
                     {
                         //vote
+                        //if the reaction belongs to a current vote
                         var message = Votes.Find((m) => arg.Message.ChannelId == m.Message.ChannelId && arg.Message.Id == m.Message.Id);
                         if (message != null && !arg.User.IsBot)
                         {
                             if (arg.Emoji.Id == Upvote.Id)
                             {
+                                //if it's an upvote, we delete the eventual downvote
                                 var downvotes = await message.Message.GetReactionsAsync(Downvote);
                                 if (downvotes.Any((u) => u.Id == arg.User.Id))
                                     await message.Message.DeleteReactionAsync(Downvote, arg.User);
                             }
+                            //if it's an downvote, we delete the eventual upvote
                             else if (arg.Emoji.Id == Downvote.Id)
                             {
                                 var upvotes = await message.Message.GetReactionsAsync(Upvote);
@@ -730,6 +825,7 @@ lauto                                       display all the current automated te
                     }
                     {
                         //poll
+                        //almost same as above, you can do it
                         var message = Polls.Find((m) => arg.Message.ChannelId == m.Message.ChannelId && arg.Message.Id == m.Message.Id);
                         if (message != null && !arg.User.IsBot)
                         {
@@ -755,6 +851,7 @@ lauto                                       display all the current automated te
             {
                 Dispatcher.Execute(async () =>
                 {
+                    //not used for now...
                 });
             };
         }

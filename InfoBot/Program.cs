@@ -18,46 +18,118 @@ namespace InfoBot
     {
         #region Private Fields
 
+        /// <summary>
+        /// Used to change some actions, such as targeting a special debug channel for spam, and
+        /// disable the edt check
+        /// </summary>
         private const bool DEBUG = false;
 
+        /// <summary>
+        /// List of all autoruns created
+        /// </summary>
         private static List<Autorun> Autoruns;
 
+        /// <summary>
+        /// Global HTTP client for edt purposes atm
+        /// </summary>
         private static WebClient Client;
+
+        /// <summary>
+        /// The default front color of the local console
+        /// </summary>
         private static ConsoleColor DefaultColor;
+
+        /// <summary>
+        /// Current line of the deja vu song waiting to be written
+        /// </summary>
         private static int DejavuCurrLine;
+
+        /// <summary>
+        /// Lyrics of deja vu
+        /// </summary>
         private static string[] dejavuLines;
+
+        /// <summary>
+        /// The main discord server
+        /// </summary>
         private static DiscordGuild DUTInfoServer;
+
+        /// <summary>
+        /// list of 8 edt channels, sorted by their group
+        /// </summary>
         private static DiscordChannel[] EdtChannel;
-        private static List<EdtDayMessage>[] EdTMessages;
+
+        /// <summary>
+        /// Last time the edt got checked (used for updating every week)
+        /// </summary>
         private static DateTime LastEdtCheck;
+
+        /// <summary>
+        /// The old hash of each edt (sorted by their group). Used to detect changes in differents edt.
+        /// </summary>
         private static int[] OldICalHash;
 
+        /// <summary>
+        /// Current line of the revenge song waiting to be written
+        /// </summary>
         private static int RevengeCurrLine;
+
+        /// <summary>
+        /// Lyrics of revenge
+        /// </summary>
         private static string[] revengeLines;
+
+        /// <summary>
+        /// active saved polls (using template)
+        /// </summary>
         private static List<SavedPoll> SavedPolls;
 
+        /// <summary>
+        /// active saved votes (using template)
+        /// </summary>
         private static List<SavedVote> SavedVotes;
 
+        /// <summary>
+        /// Id of the test server (NOT the DUT INFO)
+        /// </summary>
         private static DiscordGuild TestServer;
 
+        /// <summary>
+        /// The 8 roles sorted by their group
+        /// </summary>
         private static DiscordRole[] TPRoles;
 
         #endregion Private Fields
 
         #region Private Properties
 
+        /// <summary>
+        /// List of urls to the ical sorted by their group
+        /// </summary>
         private static string[] CalendarUrl { get; set; }
 
+        /// <summary>
+        /// Global discord client
+        /// </summary>
         private static DiscordClient Discord { get; set; }
 
+        /// <summary>
+        /// Dispatcher used by the main func
+        /// </summary>
         private static Dispatcher Dispatcher { get; set; }
 
         #endregion Private Properties
 
         #region Private Methods
 
+        /// <summary>
+        /// Main func, but async
+        /// </summary>
+        /// <param name="args">arguments</param>
+        /// <returns>void</returns>
         private static async Task AsyncMain(string[] args)
         {
+            //we initiate the differents lyrics
             RevengeCurrLine = 0;
             DejavuCurrLine = 0;
             using (var stream = new StreamReader("revenge.txt"))
@@ -88,6 +160,7 @@ namespace InfoBot
                 }
                 dejavuLines = lines.ToArray();
             }
+            //now we initiate the ical
             CalendarUrl = new string[8];
             TPRoles = new DiscordRole[8];
             CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=e81e5e310001831"; //1.1
@@ -116,8 +189,10 @@ namespace InfoBot
             Random = new Random();
             Dispatcher = new Dispatcher();
             var consoleThread = new Thread(ConsoleManager);
+            //we connect to the DUT server
             if (!ExecuteAsyncMethod(() => Discord.GetGuildAsync(619513574850560010), out DUTInfoServer))
                 DUTInfoServer = null;
+            //we connect to the test server
             ExecuteAsyncMethod(() => Discord.GetGuildAsync(437704877221609472), out TestServer);
             InitCommands();
             ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
@@ -125,6 +200,7 @@ namespace InfoBot
             EdtChannel = new DiscordChannel[8];
             ExecuteAsyncMethod(async () =>
             {
+                //all the specific chan/roles sorted by their group
                 EdtChannel[0] = await Discord.GetChannelAsync(623557669810077697);
                 EdtChannel[1] = await Discord.GetChannelAsync(623557699497623602);
                 EdtChannel[2] = await Discord.GetChannelAsync(623557716694138890);
@@ -147,6 +223,7 @@ namespace InfoBot
             if (DEBUG)
                 ExecuteAsyncMethod(async () =>
                 {
+                    //debug equivalent, target #debug-bot and "@Developpeur du BOT"
                     EdtChannel[0] = await Discord.GetChannelAsync(623874313539289125);
                     EdtChannel[1] = EdtChannel[0];
                     EdtChannel[2] = EdtChannel[0];
@@ -165,12 +242,16 @@ namespace InfoBot
                     TPRoles[6] = TPRoles[0];
                     TPRoles[7] = TPRoles[0];
                 });
+            //whenever a messages gets created...
             Discord.MessageCreated += async (arg) =>
             {
+                //we execute in the same thread using the dispatcher
                 Dispatcher.Execute(async () =>
                 {
+                    //native exception handling, preventing crashes
                     ExecuteAsyncMethod(async () =>
                     {
+                        //for messages containing "c'était sûr" to respond with our lord and savior Sardoche
                         var content = arg.Message.Content;
                         content = content.ToLower();
                         var newStr = "";
@@ -191,16 +272,20 @@ namespace InfoBot
                     });
                 });
             };
+            //same as above
             Discord.MessageCreated += async (arg) =>
             {
                 Dispatcher.Execute(async () =>
                 {
                     ExecuteAsyncMethod(async () =>
                     {
+                        //handling revenge lyrics
                         var content = GetSimplifiedString(arg.Message.Content);
                         if (EvaluateWholeStringSimilarity(arg.Message.Content, revengeLines[RevengeCurrLine]) >= .7 && !arg.Author.IsBot)
                         {
+                            //if a similarity has been detected and it's not comming from a bot
                             RevengeCurrLine += 2;
+                            //we test if we are at the end of the song
                             if (RevengeCurrLine - 1 < revengeLines.Length)
                                 await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
                             else
@@ -208,9 +293,11 @@ namespace InfoBot
                         }
                         else if (content.Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
                         {
+                            //if we start over again (first line of the lyrics)
                             RevengeCurrLine = 2;
                             await arg.Message.RespondAsync(revengeLines[1]);
                         }
+                        //same as above, but for deja vu
                         if (EvaluateWholeStringSimilarity(arg.Message.Content, dejavuLines[DejavuCurrLine]) >= .7 && !arg.Author.IsBot)
                         {
                             DejavuCurrLine += 2;
@@ -221,6 +308,7 @@ namespace InfoBot
                         }
                         else if (content.Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
                         {
+                            //special starting point, where it it "deja vu !"
                             DejavuCurrLine = 10;
                             await arg.Message.RespondAsync(dejavuLines[9]);
                         }
@@ -229,6 +317,7 @@ namespace InfoBot
                             DejavuCurrLine = 2;
                             await arg.Message.RespondAsync(dejavuLines[1]);
                         }
+                        //nice things happens here
                         if ((content.Contains("69") || content.Contains("420")) && !arg.Author.IsBot)
                             await arg.Message.RespondAsync("nice");
                     });
@@ -240,30 +329,40 @@ namespace InfoBot
             Console.WriteLine("Initialized");
             Console.ForegroundColor = DefaultColor;
             consoleThread.Start();
-
+            //we always want to check if everything is ok when starting, so we go a little bit back in time
             DateTimeOffset lastListCheck = DateTimeOffset.UnixEpoch;
             DateTimeOffset lastCalendarCheck = DateTimeOffset.UnixEpoch;
             DateTimeOffset lastEdtDayCheck = DateTimeOffset.UnixEpoch;
 
             while (true)
             {
+                //dispatcher handling, whenever we add a func to execute to the dispatcher, it gets added here so everything is executed on the same thread
                 var next = Dispatcher.GetNext();
                 if (next != null)
                     ExecuteAsyncMethod(next);
+                //We check for the votes/polls every 20 secs
                 if (lastListCheck + TimeSpan.FromSeconds(20) < DateTimeOffset.Now)
                 {
                     lastListCheck = DateTimeOffset.Now;
                     ExecuteAsyncMethod(UpdateLists);
                 }
+                //We check for the edt every 2 hours
                 if (lastCalendarCheck + TimeSpan.FromHours(2) < DateTimeOffset.Now)
                 {
                     lastCalendarCheck = DateTimeOffset.Now;
                     ExecuteAsyncMethod(async () => UpdateCalendars());
                 }
+                //give some resting time to that poor CPU !
                 Thread.Sleep(TimeSpan.FromMilliseconds(50));
             }
         }
 
+        /// <summary>
+        /// Function that return a value between 0 and 1 according to the similarity of 2 strings
+        /// </summary>
+        /// <param name="source">string 1</param>
+        /// <param name="target">string 2</param>
+        /// <returns>value between 0 and 1 according to the similarity of 2 strings</returns>
         private static double CalculateSimilarity(string source, string target)
         {
             //https://social.technet.microsoft.com/wiki/contents/articles/26805.c-calculating-percentage-similarity-of-2-strings.aspx
@@ -275,8 +374,15 @@ namespace InfoBot
             return (1.0 - ((double)stepsToSame / Math.Max(source.Length, target.Length)));
         }
 
+        /// <summary>
+        /// Function that returns the number of steps required to transform a string into another
+        /// </summary>
+        /// <param name="source">string 1</param>
+        /// <param name="target">string 2</param>
+        /// <returns>the number of steps required to transform a string into another</returns>
         private static int ComputeLevenshteinDistance(string source, string target)
         {
+            //I just copy/pasted this code from somewhere i don't remember, please don't touch it thx
             if ((source == null) || (target == null)) return 0;
             if ((source.Length == 0) || (target.Length == 0)) return 0;
             if (source == target) return source.Length;
@@ -312,6 +418,9 @@ namespace InfoBot
             return distance[sourceWordCount, targetWordCount];
         }
 
+        /// <summary>
+        /// Manages the local console, currently poorly implemented.
+        /// </summary>
         private static void ConsoleManager()
         {
             while (true)
@@ -363,20 +472,36 @@ namespace InfoBot
             }
         }
 
+        /// <summary>
+        /// ALl in one function to give a value from 0 to 1 depending of the similarity of 2 strings.
+        /// It first simplifies them and check if the content contains a possible origin string. That
+        /// means it can return a value of 1 if the content contains the origin even if it has more
+        /// chars around.
+        /// </summary>
+        /// <param name="content">String that contains eventually the origin</param>
+        /// <param name="origin">String to search for</param>
+        /// <returns>value from 0 to 1</returns>
         private static double EvaluateWholeStringSimilarity(string content, string origin)
         {
+            //we automatically simplify the strings
             content = GetSimplifiedString(content);
             origin = GetSimplifiedString(origin);
             double highest = 0;
             int i = 0;
             do
             {
+                //we check every possible way that origin can be in content, and keep only the highest score
                 highest = Math.Max(CalculateSimilarity(content.Substring(i, Math.Min(origin.Length, content.Length - i)), origin), highest);
                 i++;
             } while (i <= content.Length - origin.Length);
             return highest;
         }
 
+        /// <summary>
+        /// Safe from crashes way to trun an async method
+        /// </summary>
+        /// <param name="func">async func to run</param>
+        /// <returns>True if everything went well, false if it returned an exception.</returns>
         private static bool ExecuteAsyncMethod(Func<Task> func)
         {
             try
@@ -394,6 +519,12 @@ namespace InfoBot
             return true;
         }
 
+        /// <summary>
+        /// Safe from crashes way to trun an async method
+        /// </summary>
+        /// <param name="func">async func to run</param>
+        /// <param name="returnValue">Possible return value of the async func</param>
+        /// <returns>True if everything went well, false if it returned an exception.</returns>
         private static bool ExecuteAsyncMethod<T>(Func<Task<T>> func, out T returnValue)
         {
             try
@@ -414,29 +545,48 @@ namespace InfoBot
             return true;
         }
 
+        /// <summary>
+        /// Get the string implementation of an emoji, regardless of its origin
+        /// </summary>
+        /// <param name="emoji">emoji object</param>
+        /// <returns>coded string</returns>
         private static string GetCode(DiscordEmoji emoji)
         {
             if (emoji.RequireColons)
+                //if the emoji is custom
                 return "<" + emoji.GetDiscordName() + emoji.Id + ">";
             else
+                //if the emoji is native (Unicode)
                 return emoji.Name;
         }
 
+        /// <summary>
+        /// Get the emoji object from a code string
+        /// </summary>
+        /// <param name="code">coded string</param>
+        /// <returns>emoji object</returns>
         private static DiscordEmoji GetEmoji(string code)
         {
             DiscordEmoji emoji;
             try
             {
+                //If the emoji is custom
                 var id = code.Split(':').Last();
                 emoji = DiscordEmoji.FromGuildEmote(Discord, ulong.Parse(id.Substring(0, id.Length - 1)));
             }
             catch (Exception)
             {
+                //If the emoji is native (Unicode)
                 emoji = DiscordEmoji.FromUnicode(Discord, code);
             }
             return emoji;
         }
 
+        /// <summary>
+        /// Simplify to the extreme a string, keeping only lowercase with no diacritics letters and digits
+        /// </summary>
+        /// <param name="str"></param>
+        /// <returns></returns>
         private static string GetSimplifiedString(string str)
         {
             str = RemoveDiacritics(str).ToLower();
@@ -449,8 +599,12 @@ namespace InfoBot
             return newStr;
         }
 
+        /// <summary>
+        /// Loads the saved data.json file
+        /// </summary>
         private static void LoadData()
         {
+            //here we extract everything saved from the last session, so we keep track of everything
             if (!File.Exists("data.json"))
             {
                 var file = new StreamWriter("data.json");
@@ -516,11 +670,22 @@ namespace InfoBot
                 Autoruns = new List<Autorun>();
         }
 
+        /// <summary>
+        /// Main func
+        /// </summary>
+        /// <param name="args">arguments</param>
         private static void Main(string[] args)
         {
+            //we better run the async version asap
             Task.Run(() => AsyncMain(args)).GetAwaiter().GetResult();
         }
 
+        /// <summary>
+        /// Parse a command-like string
+        /// </summary>
+        /// <param name="input">command-like string</param>
+        /// <param name="command">name of the command (first word)</param>
+        /// <param name="args">arguments to that command (every other words/strings after the command)</param>
         private static void ParseInput(string input, out string command, out string[] args)
         {
             command = "";
@@ -528,6 +693,7 @@ namespace InfoBot
             int index = 0;
             while (index < input.Length)
             {
+                //we extract the first word
                 var currChar = input[index];
                 if (currChar == ' ')
                     break;
@@ -541,30 +707,42 @@ namespace InfoBot
             while (index < input.Length)
             {
                 var currChar = input[index];
+                //if we have to escape a character
                 if (currChar == '\\' && input.Length > index + 1)
                 {
                     currChar = input[++index];
                     currArg += currChar;
                 }
+                //if we got a blank space, we have to go to the other argument (unless we are in a string)
                 else if (currChar == ' ' && !ignoreSpaces)
                 {
                     if (currArg.Length > 0)
                         listArgs.Add(currArg);
                     currArg = "";
                 }
+                //we enter a string, we have to ignore spaces til the end of this string
                 else if (currChar == '"')
                     ignoreSpaces = !ignoreSpaces;
                 else
+                    //otherwise, we just add the current char to the current argument
                     currArg += currChar;
                 index++;
             }
+            //if the last current argument is valid, we don't forget to add him too
             if (currArg.Length > 0)
                 listArgs.Add(currArg);
             args = listArgs.ToArray();
         }
 
+        /// <summary>
+        /// remplace every diacritic by its base equivalent (a diacritic is for example "é, ç, â",
+        /// resulting in "e, c, a"
+        /// </summary>
+        /// <param name="text">text to change</param>
+        /// <returns>text without diacritics</returns>
         private static string RemoveDiacritics(string text)
         {
+            //copy pasta, don't touch it
             //https://stackoverflow.com/a/249126
             var normalizedString = text.Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
@@ -581,6 +759,9 @@ namespace InfoBot
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
 
+        /// <summary>
+        /// Here we save all the current data to keep it for the next session
+        /// </summary>
         private static void SaveData()
         {
             var obj = new Save();
@@ -625,13 +806,18 @@ namespace InfoBot
             stream.Close();
         }
 
+        /// <summary>
+        /// Here we check for the edt changes
+        /// </summary>
         private static void UpdateCalendars()
         {
+            //if we are in debug mode, we obviously don't take a look at it since it's can be pretty heavy for the bot
             if (!DEBUG)
             {
                 Console.WriteLine("Updating calendars...");
                 {
                     DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
+                    //A list of the days to check, starting the current week up to the end of the next week
                     DateTime[] daysToDisplay = new DateTime[]
                     {
                 mondayThisWeek,
@@ -647,86 +833,96 @@ namespace InfoBot
                 mondayThisWeek.AddDays(11),
                 mondayThisWeek.AddDays(12)
                     };
+                    //the new list of ical strings we will get from the urls
                     var stringICal = new string[CalendarUrl.Length];
-                    var newEdtMessages = new List<EdtDayMessage>[8];
-                    for (int i = 0; i < 8; i++)
-                        newEdtMessages[i] = new List<EdtDayMessage>();
+                    //gets true if we are in a new week (or if we are in a sooner moment in a week than the last time we checked)
                     var newWeek = ((int)DateTime.Today.DayOfWeek - 1) % 7 < ((int)LastEdtCheck.DayOfWeek - 1) % 7;
                     for (int i = 0; i < (DEBUG ? 1 : CalendarUrl.Length); i++)
                     {
                         try
                         {
+                            //we download the differents icals
                             stringICal[i] = Client.DownloadString(CalendarUrl[i]);
                         }
                         catch (Exception)
                         {
+                            //if no ical is provided, we just ignore it. I already give enough the the promotion, if they don't give me the link, fuck them.
                             continue;
                         }
+                        //if we find a difference in the ical (we check the length of the string, which isn't very smart i know) or if we changed week
                         if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length || newWeek)
                         {
                             Calendar calendar;
                             try
                             {
+                                //we try to parse the ical
                                 calendar = Calendar.Load(stringICal[i]);
                             }
                             catch (Exception)
                             {
+                                //or... we just ignore it
                                 continue;
                             }
+                            //we search of the messages in the corresponding edt channel
                             IReadOnlyList<DiscordMessage> messages;
                             ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
                             if (messages != null)
                             {
                                 foreach (var mess in messages)
                                 {
+                                    //if they come from a bot (me), we just delete them
                                     if (mess.Author.IsCurrent)
                                         ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
                                 }
                             }
+                            //and now let's spam the chan !
                             ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps :\n\n"));
                             foreach (var day in daysToDisplay)
                             {
-                                var currEdtMessage = new EdtDayMessage();
-                                currEdtMessage.day = day;
+                                //we take only the events corresponding to the day we are trying to display
                                 var events = new List<CalendarEvent>(calendar.Events.Where((e) => e.Start.Date == day));
+                                //no course, free day !
                                 if (events.Count == 0)
                                     continue;
                                 StringBuilder contenthead = new StringBuilder();
+                                //we draw a line to separate the two weeks
                                 if (day.DayOfWeek == DayOfWeek.Monday && mondayThisWeek != day)
                                     contenthead.Append("\n`________________________________________________________________________________________________________________________`\n\n");
+                                //after Avanox asked, we will add a death skull if we ever get courses on saturday
                                 if (day.DayOfWeek == DayOfWeek.Saturday)
                                     contenthead.Append("**" + day.ToString("D") + "** 💀");
                                 else
+                                    //otherwise, we just display that day...
                                     contenthead.Append("**" + day.ToString("D") + "**");
-                                currEdtMessage.description = contenthead.ToString();
                                 contenthead.Append("\n```\n");
                                 events.Sort((l, r) => l.Start.CompareTo(r.Start));
                                 StringBuilder contentBuild = new StringBuilder();
                                 foreach (var ev in events)
                                 {
+                                    //for every courses, we display the time
                                     contentBuild.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + ":" + ev.End.Minute.ToString("00") + " | ");
                                     var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
+                                    //here we purge the differents informations from spaces
                                     for (int j = 0; j < splitted.Length; j++)
                                         splitted[j] = splitted[j].TrimStart().TrimEnd();
+                                    //and we display other informations, such as the matter, the class, the location, ...
                                     contentBuild.Append(splitted[0] + ", " + splitted[3]);
+                                    //if the type of the course is given (CM/TD/TP)
                                     if (splitted.Length == 5)
                                         contentBuild.Append(", " + splitted[4]);
                                     contentBuild.Append("\n");
                                 }
-                                currEdtMessage.content = contentBuild.ToString();
+                                //we add the events to the main message
                                 contenthead.Append(contentBuild);
                                 contenthead.Append("```");
                                 DiscordMessage mess;
+                                //and we post that message
                                 ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(contenthead.ToString()), out mess);
-                                currEdtMessage.message = new SpecialMessage() { channel = mess.ChannelId, id = mess.Id };
-                                newEdtMessages[i].Add(currEdtMessage);
                             }
+                            //we also save the new length of the ical, to check differences
                             OldICalHash[i] = stringICal[i].Length;
                         }
-                        else
-                            newEdtMessages[i] = EdTMessages[i];
                     }
-                    EdTMessages = newEdtMessages;
                     LastEdtCheck = DateTime.Now;
                     SaveData();
                     Console.WriteLine("Calendars updated");
@@ -734,11 +930,16 @@ namespace InfoBot
             }
         }
 
+        /// <summary>
+        /// Here we update the votes/polls
+        /// </summary>
+        /// <returns>void</returns>
         private static async Task UpdateLists()
         {
             for (int i = Votes.Count - 1; i >= 0; i--)
             {
                 var item = Votes[i];
+                //if the lifitime of the vote has exceeded, we display the results
                 if (item.Message.CreationTimestamp + item.Lifetime < DateTimeOffset.Now)
                 {
                     Votes.RemoveAt(i);
@@ -749,15 +950,18 @@ namespace InfoBot
                     var downvotes = await item.Message.GetReactionsAsync(Downvote);
                     if (!item.ShowUsers)
                     {
+                        //we show the results (i know i have the GetCode() func now, but i'm stupid)
                         content.Append("<" + Upvote.GetDiscordName() + Upvote.Id + "> : **" + (upvotes.Count - 1).ToString() + "**\n");
                         content.Append("<" + Downvote.GetDiscordName() + Downvote.Id + "> : **" + (downvotes.Count - 1).ToString() + "**");
                     }
                     else
                     {
+                        //we ping the people that voted if the vote had that parameter
                         content.Append("<" + Upvote.GetDiscordName() + Upvote.Id + "> : **" + (upvotes.Count - 1).ToString() + "** : ");
                         bool first = true;
                         foreach (var user in await item.Message.GetReactionsAsync(Upvote))
                         {
+                            //let's ping everyone !
                             if (!user.IsBot)
                             {
                                 if (!first)
@@ -766,6 +970,7 @@ namespace InfoBot
                                 first = false;
                             }
                         }
+                        //same for the downvotes
                         content.Append("\n<" + Downvote.GetDiscordName() + Downvote.Id + "> : **" + (downvotes.Count - 1).ToString() + "** : ");
                         first = true;
                         foreach (var user in await item.Message.GetReactionsAsync(Downvote))
@@ -779,10 +984,13 @@ namespace InfoBot
                             }
                         }
                     }
+                    //we send the results
                     ExecuteAsyncMethod(() => item.Message.Channel.SendMessageAsync(content.ToString()));
+                    //we delete the old vote
                     await item.Message.DeleteAsync();
                 }
             }
+            //basically the same thing, but for the polls
             for (int i = Polls.Count - 1; i >= 0; i--)
             {
                 var item = Polls[i];
@@ -796,6 +1004,7 @@ namespace InfoBot
                     {
                         foreach (var choice in item.Choices)
                         {
+                            //we look for every reactions possibles
                             if (choice.Item2.RequireColons)
                                 content.Append("\n<" + choice.Item2.GetDiscordName() + choice.Item2.Id + "> : **" + ((await item.Message.GetReactionsAsync(choice.Item2)).Count - 1).ToString() + "**");
                             else
@@ -833,11 +1042,13 @@ namespace InfoBot
                 var auto = Autoruns[i];
                 if (auto.baseTime + auto.delay < DateTime.Now)
                 {
+                    //if the autorun has elapsed his cooldown, we post the new vote/poll
                     auto.baseTime += auto.delay;
                     Autoruns[i] = auto;
                     var channel = await Discord.GetChannelAsync(auto.channel);
                     if (SavedVotes.Any((s) => s.name == auto.name))
                     {
+                        //if the saved one was a vote
                         var saved = SavedVotes.Find((s) => s.name == auto.name);
                         var buff = new byte[8];
                         Random.NextBytes(buff);
@@ -854,6 +1065,7 @@ namespace InfoBot
                     }
                     else if (SavedPolls.Any((s) => s.name == auto.name))
                     {
+                        //if the saved one was a poll
                         var saved = SavedPolls.Find((s) => s.name == auto.name);
                         var buff = new byte[8];
                         Random.NextBytes(buff);
