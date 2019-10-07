@@ -76,7 +76,6 @@ namespace InfoBot
 
         public Autorun[] autoruns;
         public DateTime currentSaveTime;
-        public List<EdtDayMessage>[] edtMessages;
         public int[] oldEdT;
         public Poll[] polls;
         public SavedPoll[] savedPolls;

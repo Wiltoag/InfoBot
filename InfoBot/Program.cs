@@ -473,7 +473,6 @@ namespace InfoBot
             var obj = JsonConvert.DeserializeObject<Save>(stream.ReadToEnd());
             stream.Close();
             OldICalHash = obj.oldEdT;
-            EdTMessages = obj.edtMessages;
 
             foreach (var item in obj.votes)
             {
@@ -594,7 +593,6 @@ namespace InfoBot
             obj.savedVotes = SavedVotes.ToArray();
             obj.autoruns = Autoruns.ToArray();
             obj.oldEdT = OldICalHash;
-            obj.edtMessages = EdTMessages;
             obj.currentSaveTime = DateTime.Now;
             List<Vote> v = new List<Vote>();
             foreach (var item in Votes)
