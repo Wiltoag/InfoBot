@@ -272,7 +272,7 @@ namespace InfoBot
                     {
                         var input = arg.Message.Content.Substring(4, arg.Message.Content.Length - 4);
                         ParseInput(input, out string command, out string[] args);
-                        switch (command)
+                        switch (command.ToLower())
                         {
                             case "help":
                                 await arg.Channel.SendMessageAsync(
