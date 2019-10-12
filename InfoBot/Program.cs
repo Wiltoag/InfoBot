@@ -90,6 +90,11 @@ namespace InfoBot
         private static List<SavedVote> SavedVotes;
 
         /// <summary>
+        /// The channels of the 2 shi fu mi players
+        /// </summary>
+        private static DiscordChannel[] ShiFuMiChannel;
+
+        /// <summary>
         /// Id of the test server (NOT the DUT INFO)
         /// </summary>
         private static DiscordGuild TestServer;
@@ -198,6 +203,7 @@ namespace InfoBot
             ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
             LoadData();
             EdtChannel = new DiscordChannel[8];
+            ShiFuMiChannel = new DiscordChannel[2];
             ExecuteAsyncMethod(async () =>
             {
                 //all the specific chan/roles sorted by their group
@@ -209,6 +215,9 @@ namespace InfoBot
                 EdtChannel[5] = await Discord.GetChannelAsync(623557780527382530);
                 EdtChannel[6] = await Discord.GetChannelAsync(623557795660431390);
                 EdtChannel[7] = await Discord.GetChannelAsync(623557977223200798);
+
+                ShiFuMiChannel[0] = await Discord.GetChannelAsync(632490916342530058);
+                ShiFuMiChannel[1] = await Discord.GetChannelAsync(632490998488104970);
 
                 TPRoles[0] = DUTInfoServer.GetRole(619949947042791472);
                 TPRoles[1] = DUTInfoServer.GetRole(619949993096118292);
@@ -232,6 +241,9 @@ namespace InfoBot
                     EdtChannel[5] = EdtChannel[0];
                     EdtChannel[6] = EdtChannel[0];
                     EdtChannel[7] = EdtChannel[0];
+
+                    ShiFuMiChannel[0] = EdtChannel[0];
+                    ShiFuMiChannel[1] = EdtChannel[0];
 
                     TPRoles[0] = DUTInfoServer.GetRole(623874435845324853);
                     TPRoles[1] = TPRoles[0];
@@ -279,9 +291,9 @@ namespace InfoBot
                 {
                     ExecuteAsyncMethod(async () =>
                     {
+                        var content = arg.Message.Content;
                         //handling revenge lyrics
-                        var content = GetSimplifiedString(arg.Message.Content);
-                        if (EvaluateWholeStringSimilarity(arg.Message.Content, revengeLines[RevengeCurrLine]) >= .7 && !arg.Author.IsBot)
+                        if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .7 && !arg.Author.IsBot)
                         {
                             //if a similarity has been detected and it's not comming from a bot
                             RevengeCurrLine += 2;
@@ -291,14 +303,14 @@ namespace InfoBot
                             else
                                 RevengeCurrLine = 0;
                         }
-                        else if (content.Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
+                        else if (GetSimplifiedString(content).Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
                         {
                             //if we start over again (first line of the lyrics)
                             RevengeCurrLine = 2;
                             await arg.Message.RespondAsync(revengeLines[1]);
                         }
                         //same as above, but for deja vu
-                        if (EvaluateWholeStringSimilarity(arg.Message.Content, dejavuLines[DejavuCurrLine]) >= .7 && !arg.Author.IsBot)
+                        if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .7 && !arg.Author.IsBot)
                         {
                             DejavuCurrLine += 2;
                             if (DejavuCurrLine - 1 < dejavuLines.Length)
@@ -306,13 +318,13 @@ namespace InfoBot
                             else
                                 DejavuCurrLine = 0;
                         }
-                        else if (content.Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
+                        else if (GetSimplifiedString(content).Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
                         {
                             //special starting point, where it it "deja vu !"
                             DejavuCurrLine = 10;
                             await arg.Message.RespondAsync(dejavuLines[9]);
                         }
-                        else if (EvaluateWholeStringSimilarity(arg.Message.Content, dejavuLines[0]) >= .7 && !arg.Author.IsBot)
+                        else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .7 && !arg.Author.IsBot)
                         {
                             DejavuCurrLine = 2;
                             await arg.Message.RespondAsync(dejavuLines[1]);

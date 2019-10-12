@@ -319,7 +319,20 @@ stopauto <name>                             stop the automated poll/vote
 ______________________________________________________________
 lauto                                       display all the current automated templates
     example : >ib lauto
+shifumi <other's tag> [<rounds>]                   start a shi fu mi game. The other has to reply with ""start"" within 60 seconds to accept. By default there is 3 turns.
 ```");
+                                break;
+
+                            case "shifumi":
+                                {
+                                    if (args.Length > 0)
+                                    {
+                                        var rounds = args.Length > 1 ? int.Parse(args[1]) : 3;
+                                        var user1 = await arg.Guild.GetMemberAsync(arg.Message.Author.Id);
+                                        var user2 = await arg.Guild.GetMemberAsync(arg.Message.MentionedUsers.First().Id);
+                                        _ = Task.Run(async () => await StartShiFuMiGame(user1, user2, rounds, arg.Channel));
+                                    }
+                                }
                                 break;
 
                             case "stopauto":
