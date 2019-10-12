@@ -329,9 +329,6 @@ namespace InfoBot
                             DejavuCurrLine = 2;
                             await arg.Message.RespondAsync(dejavuLines[1]);
                         }
-                        //nice things happens here
-                        if ((content.Contains("69") || content.Contains("420")) && !arg.Author.IsBot)
-                            await arg.Message.RespondAsync("nice");
                     });
                 });
             };
