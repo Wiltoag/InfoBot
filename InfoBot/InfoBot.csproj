@@ -10,6 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CoreHtmlToImage" Version="1.0.5" />
     <PackageReference Include="DSharpPlus" Version="3.2.3" />
     <PackageReference Include="Figgle" Version="0.3.0" />
     <PackageReference Include="Ical.Net" Version="4.1.11" />

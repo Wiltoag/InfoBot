@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -319,8 +320,32 @@ stopauto <name>                             stop the automated poll/vote
 ______________________________________________________________
 lauto                                       display all the current automated templates
     example : >ib lauto
+______________________________________________________________
 shifumi <other's tag> [<rounds>]                   start a shi fu mi game. The other has to reply with ""start"" within 60 seconds to accept. By default there is 3 turns.
+    example : >ib shifumi @SomeGuy#1234 5
+______________________________________________________________
 ```");
+                                await arg.Channel.SendMessageAsync(
+@"```
+logic <equation>                                  generate a logic table of the equation
+    example logic ""A -> !B""
+______________________________________________________________
+logic -help                                       display the help pannel for this command
+```");
+                                break;
+
+                            case "logic":
+                                {
+                                    if (args[0] == "-help")
+                                        await arg.Message.RespondAsync("The variables must contain only letters and/or digits, and need to start with a" +
+                    "letter. Accepted operators : & (and), | (or), ->, <->, ! (not). Priority order : (), !, &, |, →, 🡘");
+                                    else
+                                    {
+                                        var converter = new CoreHtmlToImage.HtmlConverter();
+                                        var bytes = converter.FromHtmlString(LogicTable.Parsing.GenerateHTML(args[0]), 500, CoreHtmlToImage.ImageFormat.Png);
+                                        await arg.Message.RespondWithFileAsync(new MemoryStream(bytes), "output.png");
+                                    }
+                                }
                                 break;
 
                             case "shifumi":
