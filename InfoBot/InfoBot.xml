@@ -346,5 +346,120 @@
             </summary>
             <returns>function to execute</returns>
         </member>
+        <member name="T:LogicTable.Constant">
+            <summary>
+            Manages a constant value in the expression (any variable acutally)
+            </summary>
+        </member>
+        <member name="P:LogicTable.Constant.Name">
+            <summary>
+            Name of the constant
+            </summary>
+        </member>
+        <member name="M:LogicTable.Constant.Test(System.Collections.Generic.Dictionary{System.String,System.Boolean})">
+            <summary>
+            See in Equation
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <member name="M:LogicTable.Equation.Test(System.Collections.Generic.Dictionary{System.String,System.Boolean})">
+            <summary>
+            Returns the output of the equation.
+            </summary>
+            <param name="keys">The values to give to the constants</param>
+            <returns>Output value of the equation.</returns>
+        </member>
+        <member name="T:LogicTable.Not">
+            <summary>
+            The... not operator....
+            </summary>
+        </member>
+        <member name="P:LogicTable.Not.InternalEquation">
+            <summary>
+            Sub equation to apply the not operator
+            </summary>
+        </member>
+        <member name="M:LogicTable.Not.Test(System.Collections.Generic.Dictionary{System.String,System.Boolean})">
+            <summary>
+            See in Equation
+            </summary>
+            <param name="keys"></param>
+            <returns></returns>
+        </member>
+        <!-- Badly formed XML comment ignored for member "T:LogicTable.OperatorEquation" -->
+        <member name="T:LogicTable.OperatorEquation.OperatorType">
+            <summary>
+            Id of the operator
+            </summary>
+        </member>
+        <member name="P:LogicTable.OperatorEquation.Left">
+            <summary>
+            Left part of the operator
+            </summary>
+        </member>
+        <member name="P:LogicTable.OperatorEquation.Operator">
+            <summary>
+            Type of operator to apply
+            </summary>
+        </member>
+        <member name="P:LogicTable.OperatorEquation.Right">
+            <summary>
+            Right part of operator
+            </summary>
+        </member>
+        <member name="M:LogicTable.Parsing.DivideStr(System.String,System.Int32@)">
+            <summary>
+            This method split the equation (string) into a tree of equations (string) according the parentheses
+            </summary>
+            <param name="eq">equation</param>
+            <param name="index">starting index of the equation in the string</param>
+            <returns>tree</returns>
+        </member>
+        <member name="M:LogicTable.Parsing.GenerateHTML(System.String)">
+            <summary>
+            Generates html code containing the logic table of the equation
+            </summary>
+            <param name="eq">equation</param>
+            <returns>html</returns>
+        </member>
+        <member name="M:LogicTable.Parsing.getStr(LogicTable.Equation)">
+            <summary>
+            returns a visual variant of an equation
+            </summary>
+            <param name="eq"></param>
+            <returns></returns>
+        </member>
+        <member name="M:LogicTable.Parsing.Parse(System.String,LogicTable.UnparsedEq,System.Collections.Generic.List{System.String})">
+            <summary>
+            Returns an equation from the given string, and other stuff
+            </summary>
+            <param name="str">equation to parse</param>
+            <param name="currentUnparsed">current tree</param>
+            <param name="registeredVars">the variables</param>
+            <returns>output equation</returns>
+        </member>
+        <member name="M:LogicTable.Parsing.SkipBlank(System.String,System.Int32@)">
+            <summary>
+            Increase the index while it has blank chars in the way
+            </summary>
+            <param name="str"></param>
+            <param name="index"></param>
+        </member>
+        <member name="T:LogicTable.UnparsedEq">
+            <summary>
+            Represent a string tree, according to parentheses
+            </summary>
+        </member>
+        <member name="F:LogicTable.UnparsedEq.str">
+            <summary>
+            string of the equation (sub tree are written like this : "%####") to be linked with the subEqs
+            </summary>
+        </member>
+        <member name="F:LogicTable.UnparsedEq.subEqs">
+            <summary>
+            sub trees
+            </summary>
+        </member>
     </members>
 </doc>
