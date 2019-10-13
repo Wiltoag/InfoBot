@@ -11,6 +11,7 @@ using DSharpPlus.Entities;
 using Newtonsoft.Json;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
+using IcalToImage;
 
 namespace InfoBot
 {
@@ -884,50 +885,29 @@ namespace InfoBot
                                         ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
                                 }
                             }
-                            //and now let's spam the chan !
-                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync("Emploi du temps :\n\n"));
-                            foreach (var day in daysToDisplay)
+                            foreach (var ev in calendar.Events)
                             {
-                                //we take only the events corresponding to the day we are trying to display
-                                var events = new List<CalendarEvent>(calendar.Events.Where((e) => e.Start.Date == day));
-                                //no course, free day !
-                                if (events.Count == 0)
-                                    continue;
-                                StringBuilder contenthead = new StringBuilder();
-                                //we draw a line to separate the two weeks
-                                if (day.DayOfWeek == DayOfWeek.Monday && mondayThisWeek != day)
-                                    contenthead.Append("\n`________________________________________________________________________________________________________________________`\n\n");
-                                //after Avanox asked, we will add a death skull if we ever get courses on saturday
-                                if (day.DayOfWeek == DayOfWeek.Saturday)
-                                    contenthead.Append("**" + day.ToString("D") + "** 💀");
-                                else
-                                    //otherwise, we just display that day...
-                                    contenthead.Append("**" + day.ToString("D") + "**");
-                                contenthead.Append("\n```\n");
-                                events.Sort((l, r) => l.Start.CompareTo(r.Start));
-                                StringBuilder contentBuild = new StringBuilder();
-                                foreach (var ev in events)
+                                //if we find a day to display, we remove useless informations from the summary
+                                if (daysToDisplay.Contains(ev.Start.Date))
                                 {
-                                    //for every courses, we display the time
-                                    contentBuild.Append("De " + ev.Start.Hour.ToString("00") + ":" + ev.Start.Minute.ToString("00") + " à " + ev.End.Hour.ToString("00") + ":" + ev.End.Minute.ToString("00") + " | ");
+                                    var sb = new StringBuilder();
                                     var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
                                     //here we purge the differents informations from spaces
                                     for (int j = 0; j < splitted.Length; j++)
                                         splitted[j] = splitted[j].TrimStart().TrimEnd();
                                     //and we display other informations, such as the matter, the class, the location, ...
-                                    contentBuild.Append(splitted[0] + ", " + splitted[3]);
+                                    sb.Append(splitted[0] + ", " + splitted[3]);
                                     //if the type of the course is given (CM/TD/TP)
                                     if (splitted.Length == 5)
-                                        contentBuild.Append(", " + splitted[4]);
-                                    contentBuild.Append("\n");
+                                        sb.Append(", " + splitted[4]);
+                                    ev.Summary = sb.ToString();
                                 }
-                                //we add the events to the main message
-                                contenthead.Append(contentBuild);
-                                contenthead.Append("```");
-                                DiscordMessage mess;
-                                //and we post that message
-                                ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(contenthead.ToString()), out mess);
                             }
+                            var convert = new Converter(calendar);
+                            var stream = new MemoryStream();
+                            convert.ConvertToBitmap(1200, daysToDisplay).Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                            stream.Seek(0, SeekOrigin.Begin);
+                            ExecuteAsyncMethod(() => EdtChannel[i].SendFileAsync(stream, "edt.png"));
                             //we also save the new length of the ical, to check differences
                             OldICalHash[i] = stringICal[i].Length;
                         }
