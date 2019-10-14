@@ -173,7 +173,7 @@ namespace InfoBot
             CalendarUrl[1] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //1.2
             CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=329314450001800"; //2.1
             CalendarUrl[3] = ""; //2.2
-            CalendarUrl[4] = ""; //3.1
+            CalendarUrl[4] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=7a533fe97001770"; //3.1
             CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=b4a52df5e501843"; //3.2
             CalendarUrl[6] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=561e49e97901779"; //4.1
             CalendarUrl[7] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=3a1ee9527101771"; //4.2
@@ -828,14 +828,17 @@ namespace InfoBot
                 {
                     DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
                     //A list of the days to check, starting the current week up to the end of the next week
-                    DateTime[] daysToDisplay = new DateTime[]
+                    DateTime[] week1 = new DateTime[]
                     {
                 mondayThisWeek,
                 mondayThisWeek.AddDays(1),
                 mondayThisWeek.AddDays(2),
                 mondayThisWeek.AddDays(3),
                 mondayThisWeek.AddDays(4),
-                mondayThisWeek.AddDays(5),
+                mondayThisWeek.AddDays(5)
+                    };
+                    DateTime[] week2 = new DateTime[]
+                    {
                 mondayThisWeek.AddDays(7),
                 mondayThisWeek.AddDays(8),
                 mondayThisWeek.AddDays(9),
@@ -888,7 +891,7 @@ namespace InfoBot
                             foreach (var ev in calendar.Events)
                             {
                                 //if we find a day to display, we remove useless informations from the summary
-                                if (daysToDisplay.Contains(ev.Start.Date))
+                                if (week1.Contains(ev.Start.Date))
                                 {
                                     var sb = new StringBuilder();
                                     var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
@@ -905,9 +908,13 @@ namespace InfoBot
                             }
                             var convert = new Converter(calendar);
                             var stream = new MemoryStream();
-                            convert.ConvertToBitmap(1200, daysToDisplay).Save(stream, System.Drawing.Imaging.ImageFormat.Png);
+                            convert.ConvertToBitmap(650, week1).Save(stream, System.Drawing.Imaging.ImageFormat.Png);
                             stream.Seek(0, SeekOrigin.Begin);
-                            ExecuteAsyncMethod(() => EdtChannel[i].SendFileAsync(stream, "edt.png"));
+                            var stream2 = new MemoryStream();
+                            convert.ConvertToBitmap(650, week2).Save(stream2, System.Drawing.Imaging.ImageFormat.Png);
+                            stream2.Seek(0, SeekOrigin.Begin);
+                            ExecuteAsyncMethod(() => EdtChannel[i].SendFileAsync(stream, "edtW1.png"));
+                            ExecuteAsyncMethod(() => EdtChannel[i].SendFileAsync(stream2, "edtW2.png"));
                             //we also save the new length of the ical, to check differences
                             OldICalHash[i] = stringICal[i].Length;
                         }
