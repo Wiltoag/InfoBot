@@ -26,6 +26,16 @@ namespace InfoBot
         private const bool DEBUG = false;
 
         /// <summary>
+        /// Current line of the all star song waiting to be written
+        /// </summary>
+        private static int AllstarCurrLine;
+
+        /// <summary>
+        /// Lyrics of all star
+        /// </summary>
+        private static string[] allstarLines;
+
+        /// <summary>
         /// List of all autoruns created
         /// </summary>
         private static List<Autorun> Autoruns;
@@ -138,6 +148,7 @@ namespace InfoBot
             //we initiate the differents lyrics
             RevengeCurrLine = 0;
             DejavuCurrLine = 0;
+            AllstarCurrLine = 0;
             using (var stream = new StreamReader("revenge.txt"))
             {
                 var lines = new List<string>();
@@ -165,6 +176,20 @@ namespace InfoBot
                         lines.Add(line);
                 }
                 dejavuLines = lines.ToArray();
+            }
+            using (var stream = new StreamReader("allstar.txt"))
+            {
+                var lines = new List<string>();
+                bool end = false;
+                while (!end)
+                {
+                    var line = stream.ReadLine();
+                    if (line == null)
+                        end = true;
+                    else
+                        lines.Add(line);
+                }
+                allstarLines = lines.ToArray();
             }
             //now we initiate the ical
             CalendarUrl = new string[8];
@@ -309,6 +334,23 @@ namespace InfoBot
                             //if we start over again (first line of the lyrics)
                             RevengeCurrLine = 2;
                             await arg.Message.RespondAsync(revengeLines[1]);
+                        }
+                        //handling all star lyrics
+                        if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .7 && !arg.Author.IsBot)
+                        {
+                            //if a similarity has been detected and it's not comming from a bot
+                            AllstarCurrLine += 2;
+                            //we test if we are at the end of the song
+                            if (AllstarCurrLine - 1 < allstarLines.Length)
+                                await arg.Message.RespondAsync(allstarLines[AllstarCurrLine - 1]);
+                            else
+                                AllstarCurrLine = 0;
+                        }
+                        else if (GetSimplifiedString(content).Contains(GetSimplifiedString(allstarLines[0])) && !arg.Author.IsBot)
+                        {
+                            //if we start over again (first line of the lyrics)
+                            AllstarCurrLine = 2;
+                            await arg.Message.RespondAsync(allstarLines[1]);
                         }
                         //same as above, but for deja vu
                         if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .7 && !arg.Author.IsBot)
