@@ -319,7 +319,7 @@ namespace InfoBot
                     {
                         var content = arg.Message.Content;
                         //handling revenge lyrics
-                        if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .7 && !arg.Author.IsBot)
+                        if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .8 && !arg.Author.IsBot)
                         {
                             //if a similarity has been detected and it's not comming from a bot
                             RevengeCurrLine += 2;
@@ -336,7 +336,7 @@ namespace InfoBot
                             await arg.Message.RespondAsync(revengeLines[1]);
                         }
                         //handling all star lyrics
-                        if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .7 && !arg.Author.IsBot)
+                        if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .8 && !arg.Author.IsBot)
                         {
                             //if a similarity has been detected and it's not comming from a bot
                             AllstarCurrLine += 2;
@@ -353,7 +353,7 @@ namespace InfoBot
                             await arg.Message.RespondAsync(allstarLines[1]);
                         }
                         //same as above, but for deja vu
-                        if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .7 && !arg.Author.IsBot)
+                        if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .8 && !arg.Author.IsBot)
                         {
                             DejavuCurrLine += 2;
                             if (DejavuCurrLine - 1 < dejavuLines.Length)
@@ -367,7 +367,7 @@ namespace InfoBot
                             DejavuCurrLine = 10;
                             await arg.Message.RespondAsync(dejavuLines[9]);
                         }
-                        else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .7 && !arg.Author.IsBot)
+                        else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .8 && !arg.Author.IsBot)
                         {
                             DejavuCurrLine = 2;
                             await arg.Message.RespondAsync(dejavuLines[1]);
