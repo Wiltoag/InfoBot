@@ -942,7 +942,7 @@ namespace InfoBot
                             foreach (var ev in calendar.Events)
                             {
                                 //if we find a day to display, we remove useless informations from the summary
-                                if (week1.Contains(ev.Start.Date) && week2.Contains(ev.Start.Date))
+                                if (week1.Contains(ev.Start.Date) || week2.Contains(ev.Start.Date))
                                 {
                                     var sb = new StringBuilder();
                                     var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
