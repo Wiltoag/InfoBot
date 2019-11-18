@@ -110,6 +110,16 @@
             disable the edt check
             </summary>
         </member>
+        <member name="F:InfoBot.Program.AllstarCurrLine">
+            <summary>
+            Current line of the all star song waiting to be written
+            </summary>
+        </member>
+        <member name="F:InfoBot.Program.allstarLines">
+            <summary>
+            Lyrics of all star
+            </summary>
+        </member>
         <member name="F:InfoBot.Program.Autoruns">
             <summary>
             List of all autoruns created

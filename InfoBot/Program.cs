@@ -205,9 +205,18 @@ namespace InfoBot
             Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
             string token;
-            Console.Write("Token :");
-            token = Console.ReadLine();
-            Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+            try
+            {
+                using (var sr = new StreamReader("token.txt"))
+                    token = sr.ReadToEnd();
+                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+            }
+            catch (Exception)
+            {
+                Console.Write("Token :");
+                token = Console.ReadLine();
+                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+            }
             Console.WriteLine("Connecting...");
             if (!ExecuteAsyncMethod(() => Discord.ConnectAsync()))
                 Environment.Exit(0);
