@@ -190,6 +190,11 @@
             The channels of the 2 shi fu mi players
             </summary>
         </member>
+        <member name="F:InfoBot.Program.TagsChannel">
+            <summary>
+            Channel for the nsfw tags
+            </summary>
+        </member>
         <member name="F:InfoBot.Program.TestServer">
             <summary>
             Id of the test server (NOT the DUT INFO)

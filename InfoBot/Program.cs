@@ -104,6 +104,10 @@ namespace InfoBot
         /// The channels of the 2 shi fu mi players
         /// </summary>
         private static DiscordChannel[] ShiFuMiChannel;
+        /// <summary>
+        /// Channel for the nsfw tags
+        /// </summary>
+        private static DiscordChannel TagsChannel;
 
         /// <summary>
         /// Id of the test server (NOT the DUT INFO)
@@ -262,6 +266,8 @@ namespace InfoBot
                 TPRoles[5] = DUTInfoServer.GetRole(619950099807862794);
                 TPRoles[6] = DUTInfoServer.GetRole(619950111300255774);
                 TPRoles[7] = DUTInfoServer.GetRole(619950125573472262);
+
+                TagsChannel = await Discord.GetChannelAsync(646474262021931026);
             });
 
             if (DEBUG)
@@ -288,6 +294,8 @@ namespace InfoBot
                     TPRoles[5] = TPRoles[0];
                     TPRoles[6] = TPRoles[0];
                     TPRoles[7] = TPRoles[0];
+                    
+                    TagsChannel = EdtChannel[0];
                 });
             //whenever a messages gets created...
             Discord.MessageCreated += async (arg) =>
@@ -381,6 +389,48 @@ namespace InfoBot
                             DejavuCurrLine = 2;
                             await arg.Message.RespondAsync(dejavuLines[1]);
                         }
+                        if (!arg.Author.IsBot)
+                            for(int i = 0;i<content.Length - 5;i++)
+                            {
+                                string strNumber = content.Substring(i, 6);
+                                bool correctPattern = true;
+                                if (i > 0 && char.IsDigit(content[i - 1]))
+                                    correctPattern = false;
+                                if (i < content.Length - 7 && char.IsDigit(content[i + 6]))
+                                    correctPattern = false;
+                                foreach (var item in strNumber)
+                                    if (!char.IsDigit(item))
+                                        correctPattern = false;
+                                if (correctPattern)
+                                {
+                                    var address = "https://nhentai.net/g/" + strNumber;
+                                    var html = Client.DownloadString(address);
+                                    string title = "";
+                                    {
+                                        var begin = -1;
+                                        for (int j = 0; j < html.Length - 4; j++)
+                                            if (html.Substring(j, 4) == "<h1>")
+                                                begin = j + 4;
+                                        for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                            title += html[j];
+                                        title.Trim(' ', '\t', '\n', '\r');
+                                    }
+                                    if (title.Contains("404"))
+                                        continue;
+                                    var sb = new StringBuilder();
+                                    sb.Append("Tag :__");
+                                    sb.Append(strNumber);
+                                    sb.Append("__ posted by **");
+                                    sb.Append(arg.Author.Username);
+                                    sb.Append("** __");
+                                    sb.Append(title);
+                                    sb.Append("__\nAvailable here : ");
+                                    sb.Append(address);
+                                    await TagsChannel.SendMessageAsync(sb.ToString());
+                                }
+                            }
+
+
                     });
                 });
             };
