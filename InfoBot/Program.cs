@@ -104,6 +104,7 @@ namespace InfoBot
         /// The channels of the 2 shi fu mi players
         /// </summary>
         private static DiscordChannel[] ShiFuMiChannel;
+
         /// <summary>
         /// Channel for the nsfw tags
         /// </summary>
@@ -294,7 +295,7 @@ namespace InfoBot
                     TPRoles[5] = TPRoles[0];
                     TPRoles[6] = TPRoles[0];
                     TPRoles[7] = TPRoles[0];
-                    
+
                     TagsChannel = EdtChannel[0];
                 });
             //whenever a messages gets created...
@@ -335,102 +336,146 @@ namespace InfoBot
                     ExecuteAsyncMethod(async () =>
                     {
                         var content = arg.Message.Content;
-                        //handling revenge lyrics
-                        if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .8 && !arg.Author.IsBot)
+                        try
                         {
-                            //if a similarity has been detected and it's not comming from a bot
-                            RevengeCurrLine += 2;
-                            //we test if we are at the end of the song
-                            if (RevengeCurrLine - 1 < revengeLines.Length)
-                                await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
-                            else
-                                RevengeCurrLine = 0;
-                        }
-                        else if (GetSimplifiedString(content).Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
-                        {
-                            //if we start over again (first line of the lyrics)
-                            RevengeCurrLine = 2;
-                            await arg.Message.RespondAsync(revengeLines[1]);
-                        }
-                        //handling all star lyrics
-                        if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .8 && !arg.Author.IsBot)
-                        {
-                            //if a similarity has been detected and it's not comming from a bot
-                            AllstarCurrLine += 2;
-                            //we test if we are at the end of the song
-                            if (AllstarCurrLine - 1 < allstarLines.Length)
-                                await arg.Message.RespondAsync(allstarLines[AllstarCurrLine - 1]);
-                            else
-                                AllstarCurrLine = 0;
-                        }
-                        else if (GetSimplifiedString(content).Contains(GetSimplifiedString(allstarLines[0])) && !arg.Author.IsBot)
-                        {
-                            //if we start over again (first line of the lyrics)
-                            AllstarCurrLine = 2;
-                            await arg.Message.RespondAsync(allstarLines[1]);
-                        }
-                        //same as above, but for deja vu
-                        if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .8 && !arg.Author.IsBot)
-                        {
-                            DejavuCurrLine += 2;
-                            if (DejavuCurrLine - 1 < dejavuLines.Length)
-                                await arg.Message.RespondAsync(dejavuLines[DejavuCurrLine - 1]);
-                            else
-                                DejavuCurrLine = 0;
-                        }
-                        else if (GetSimplifiedString(content).Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
-                        {
-                            //special starting point, where it it "deja vu !"
-                            DejavuCurrLine = 10;
-                            await arg.Message.RespondAsync(dejavuLines[9]);
-                        }
-                        else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .8 && !arg.Author.IsBot)
-                        {
-                            DejavuCurrLine = 2;
-                            await arg.Message.RespondAsync(dejavuLines[1]);
-                        }
-                        if (!arg.Author.IsBot)
-                            for(int i = 0;i<content.Length - 5;i++)
+                            //handling revenge lyrics
+                            if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .8 && !arg.Author.IsBot)
                             {
-                                string strNumber = content.Substring(i, 6);
-                                bool correctPattern = true;
-                                if (i > 0 && char.IsDigit(content[i - 1]))
-                                    correctPattern = false;
-                                if (i < content.Length - 7 && char.IsDigit(content[i + 6]))
-                                    correctPattern = false;
-                                foreach (var item in strNumber)
-                                    if (!char.IsDigit(item))
-                                        correctPattern = false;
-                                if (correctPattern)
+                                //if a similarity has been detected and it's not comming from a bot
+                                RevengeCurrLine += 2;
+                                //we test if we are at the end of the song
+                                if (RevengeCurrLine - 1 < revengeLines.Length)
+                                    await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
+                                else
+                                    RevengeCurrLine = 0;
+                            }
+                            else if (GetSimplifiedString(content).Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
+                            {
+                                //if we start over again (first line of the lyrics)
+                                RevengeCurrLine = 2;
+                                await arg.Message.RespondAsync(revengeLines[1]);
+                            }
+                            //handling all star lyrics
+                            if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .8 && !arg.Author.IsBot)
+                            {
+                                //if a similarity has been detected and it's not comming from a bot
+                                AllstarCurrLine += 2;
+                                //we test if we are at the end of the song
+                                if (AllstarCurrLine - 1 < allstarLines.Length)
+                                    await arg.Message.RespondAsync(allstarLines[AllstarCurrLine - 1]);
+                                else
+                                    AllstarCurrLine = 0;
+                            }
+                            else if (GetSimplifiedString(content).Contains(GetSimplifiedString(allstarLines[0])) && !arg.Author.IsBot)
+                            {
+                                //if we start over again (first line of the lyrics)
+                                AllstarCurrLine = 2;
+                                await arg.Message.RespondAsync(allstarLines[1]);
+                            }
+                            //same as above, but for deja vu
+                            if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .8 && !arg.Author.IsBot)
+                            {
+                                DejavuCurrLine += 2;
+                                if (DejavuCurrLine - 1 < dejavuLines.Length)
+                                    await arg.Message.RespondAsync(dejavuLines[DejavuCurrLine - 1]);
+                                else
+                                    DejavuCurrLine = 0;
+                            }
+                            else if (GetSimplifiedString(content).Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
+                            {
+                                //special starting point, where it it "deja vu !"
+                                DejavuCurrLine = 10;
+                                await arg.Message.RespondAsync(dejavuLines[9]);
+                            }
+                            else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .8 && !arg.Author.IsBot)
+                            {
+                                DejavuCurrLine = 2;
+                                await arg.Message.RespondAsync(dejavuLines[1]);
+                            }
+                            if (!arg.Author.IsBot)
+                            {
+                                for (int i = 0; i < content.Length - 5; i++)
                                 {
-                                    var address = "https://nhentai.net/g/" + strNumber;
-                                    var html = Client.DownloadString(address);
-                                    string title = "";
+                                    string strNumber = content.Substring(i, 6);
+                                    bool correctPattern = true;
+                                    if (i > 0 && char.IsDigit(content[i - 1]))
+                                        correctPattern = false;
+                                    if (i < content.Length - 6 && char.IsDigit(content[i + 6]))
+                                        correctPattern = false;
+                                    foreach (var item in strNumber)
+                                        if (!char.IsDigit(item))
+                                            correctPattern = false;
+                                    if (correctPattern)
                                     {
-                                        var begin = -1;
-                                        for (int j = 0; j < html.Length - 4; j++)
-                                            if (html.Substring(j, 4) == "<h1>")
-                                                begin = j + 4;
-                                        for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
-                                            title += html[j];
-                                        title.Trim(' ', '\t', '\n', '\r');
+                                        var address = "https://nhentai.net/g/" + strNumber;
+                                        var html = Client.DownloadString(address);
+                                        string title = "";
+                                        {
+                                            var begin = -1;
+                                            for (int j = 0; j < html.Length - 4; j++)
+                                                if (html.Substring(j, 4) == "<h1>")
+                                                    begin = j + 4;
+                                            for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                                title += html[j];
+                                            title.Trim(' ', '\t', '\n', '\r');
+                                        }
+                                        if (title.Contains("404"))
+                                            continue;
+                                        var sb = new StringBuilder();
+                                        sb.Append("Tag :__");
+                                        sb.Append(strNumber);
+                                        sb.Append("__ posted by **");
+                                        sb.Append(arg.Author.Username);
+                                        sb.Append("** __");
+                                        sb.Append(title);
+                                        sb.Append("__\nAvailable here : ");
+                                        sb.Append(address);
+                                        await TagsChannel.SendMessageAsync(sb.ToString());
                                     }
-                                    if (title.Contains("404"))
-                                        continue;
-                                    var sb = new StringBuilder();
-                                    sb.Append("Tag :__");
-                                    sb.Append(strNumber);
-                                    sb.Append("__ posted by **");
-                                    sb.Append(arg.Author.Username);
-                                    sb.Append("** __");
-                                    sb.Append(title);
-                                    sb.Append("__\nAvailable here : ");
-                                    sb.Append(address);
-                                    await TagsChannel.SendMessageAsync(sb.ToString());
+                                }
+                                for (int i = 0; i < content.Length - 4; i++)
+                                {
+                                    string strNumber = content.Substring(i, 5);
+                                    bool correctPattern = true;
+                                    if (i > 0 && char.IsDigit(content[i - 1]))
+                                        correctPattern = false;
+                                    if (i < content.Length - 5 && char.IsDigit(content[i + 5]))
+                                        correctPattern = false;
+                                    foreach (var item in strNumber)
+                                        if (!char.IsDigit(item))
+                                            correctPattern = false;
+                                    if (correctPattern)
+                                    {
+                                        var address = "https://nhentai.net/g/" + strNumber;
+                                        var html = Client.DownloadString(address);
+                                        string title = "";
+                                        {
+                                            var begin = -1;
+                                            for (int j = 0; j < html.Length - 4; j++)
+                                                if (html.Substring(j, 4) == "<h1>")
+                                                    begin = j + 4;
+                                            for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                                title += html[j];
+                                            title.Trim(' ', '\t', '\n', '\r');
+                                        }
+                                        if (title.Contains("404"))
+                                            continue;
+                                        var sb = new StringBuilder();
+                                        sb.Append("Tag :__");
+                                        sb.Append(strNumber);
+                                        sb.Append("__ posted by **");
+                                        sb.Append(arg.Author.Username);
+                                        sb.Append("** __");
+                                        sb.Append(title);
+                                        sb.Append("__\nAvailable here : ");
+                                        sb.Append(address);
+                                        await TagsChannel.SendMessageAsync(sb.ToString());
+                                    }
                                 }
                             }
-
-
+                        }
+                        catch (Exception)
+                        { }
                     });
                 });
             };
@@ -584,10 +629,10 @@ namespace InfoBot
         }
 
         /// <summary>
-        /// ALl in one function to give a value from 0 to 1 depending of the similarity of 2 strings.
-        /// It first simplifies them and check if the content contains a possible origin string. That
-        /// means it can return a value of 1 if the content contains the origin even if it has more
-        /// chars around.
+        /// ALl in one function to give a value from 0 to 1 depending of the similarity of 2
+        /// strings. It first simplifies them and check if the content contains a possible origin
+        /// string. That means it can return a value of 1 if the content contains the origin even if
+        /// it has more chars around.
         /// </summary>
         /// <param name="content">String that contains eventually the origin</param>
         /// <param name="origin">String to search for</param>

@@ -250,10 +250,10 @@
         </member>
         <member name="M:InfoBot.Program.EvaluateWholeStringSimilarity(System.String,System.String)">
             <summary>
-            ALl in one function to give a value from 0 to 1 depending of the similarity of 2 strings.
-            It first simplifies them and check if the content contains a possible origin string. That
-            means it can return a value of 1 if the content contains the origin even if it has more
-            chars around.
+            ALl in one function to give a value from 0 to 1 depending of the similarity of 2
+            strings. It first simplifies them and check if the content contains a possible origin
+            string. That means it can return a value of 1 if the content contains the origin even if
+            it has more chars around.
             </summary>
             <param name="content">String that contains eventually the origin</param>
             <param name="origin">String to search for</param>
