@@ -341,6 +341,45 @@ deepfried [<amplitude>]                           transforms an image into a dee
 
                             case "deepfried":
                                 {
+                                    Color CreateHSL(byte alpha, double hue, double saturation, double luminance)
+                                    {
+                                        double r = 0, g = 0, b = 0;
+                                        double temp1, temp2;
+                                        if (luminance == 0)
+                                            r = g = b = 0;
+                                        else
+                                        {
+                                            if (saturation == 0)
+                                                r = g = b = luminance;
+                                            else
+                                            {
+                                                temp2 = ((luminance <= 0.5) ? luminance * (1.0 + saturation) : luminance + saturation - (luminance * saturation));
+                                                temp1 = 2.0 * luminance - temp2;
+                                                hue /= 360;
+                                                double[] t3 = new double[] { hue + 1.0 / 3.0, hue, hue - 1.0 / 3.0 };
+                                                double[] clr = new double[] { 0, 0, 0 };
+                                                for (int i = 0; i < 3; i++)
+                                                {
+                                                    if (t3[i] < 0)
+                                                        t3[i] += 1.0;
+                                                    if (t3[i] > 1)
+                                                        t3[i] -= 1.0;
+                                                    if (6.0 * t3[i] < 1.0)
+                                                        clr[i] = temp1 + (temp2 - temp1) * t3[i] * 6.0;
+                                                    else if (2.0 * t3[i] < 1.0)
+                                                        clr[i] = temp2;
+                                                    else if (3.0 * t3[i] < 2.0)
+                                                        clr[i] = (temp1 + (temp2 - temp1) * ((2.0 / 3.0) - t3[i]) * 6.0);
+                                                    else
+                                                        clr[i] = temp1;
+                                                }
+                                                r = clr[0];
+                                                g = clr[1];
+                                                b = clr[2];
+                                            }
+                                        }
+                                        return Color.FromArgb(alpha, (int)(255 * r), (int)(255 * g), (int)(255 * b));
+                                    };
                                     double map(double value, double min, double max, double outMin, double outMax)
                                     {
                                         double perc = (value - min) / (max - min);
@@ -364,18 +403,13 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                                     byte r = pixel.R;
                                                     byte g = pixel.G;
                                                     byte b = pixel.B;
-                                                    byte noise = (byte)(Random.NextDouble() * amplitude * 100);
+                                                    byte noise = (byte)(Random.NextDouble() * amplitude * 150);
                                                     const double threshold = .2;
                                                     r = (byte)(r < amplitude * threshold * 255 ?
                                                                 0 :
                                                                 r > 255 - 255 * amplitude * threshold ?
                                                                     255 :
                                                                     map(r, 255 * amplitude * threshold, 255 - 255 * amplitude * threshold, 0, 255));
-                                                    g = (byte)(r < amplitude * threshold * 255 ?
-                                                                0 :
-                                                                g > 255 - 255 * amplitude * threshold ?
-                                                                    255 :
-                                                                    map(g, 255 * amplitude * threshold, 255 - 255 * amplitude * threshold, 0, 255));
                                                     g = (byte)(g < amplitude * threshold * 255 ?
                                                                 0 :
                                                                 g > 255 - 255 * amplitude * threshold ?
@@ -386,6 +420,15 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                                                 b > 255 - 255 * amplitude * threshold ?
                                                                     255 :
                                                                     map(b, 255 * amplitude * threshold, 255 - 255 * amplitude * threshold, 0, 255));
+                                                    pixel = Color.FromArgb(pixel.A, r, g, b);
+                                                    pixel = CreateHSL(
+                                                        pixel.A,
+                                                        pixel.GetHue(),
+                                                        map(amplitude, 0, 1, pixel.GetSaturation(), 1),
+                                                        map(amplitude, 0, 1, pixel.GetBrightness(), pixel.GetBrightness() > .97 ? 1 : .5));
+                                                    r = pixel.R;
+                                                    g = pixel.G;
+                                                    b = pixel.B;
                                                     if (Random.Next() % 2 == 0)
                                                     {
                                                         r += (byte)Math.Min(255 - r, noise);
