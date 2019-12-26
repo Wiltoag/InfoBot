@@ -6,6 +6,8 @@ using System.Text;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using System.Drawing.Imaging;
+using System.Drawing;
 
 namespace InfoBot
 {
@@ -331,7 +333,108 @@ logic <equation>                                  generate a logic table of the 
     example logic ""A -> !B""
 ______________________________________________________________
 logic -help                                       display the help pannel for this command
+jpg [<quality>]                                   converts the linked image into a jpeg with a custom compression ranging from 0 to 100 (0 by default, to ""add more jpeg"")
+jpeg [<quality>]                                  same as above
+deepfried [<amplitude>]                           transforms an image into a deep fried version. The amplitude ranges from 0 to 100 (100 by default for... D E E P   F R I E D)
 ```");
+                                break;
+
+                            case "deepfried":
+                                {
+                                    double map(double value, double min, double max, double outMin, double outMax)
+                                    {
+                                        double perc = (value - min) / (max - min);
+                                        return outMin + (outMax - outMin) * perc;
+                                    };
+                                    double amplitude = 1;
+                                    if (args.Length > 0)
+                                        amplitude = Math.Max(0, Math.Min(1, double.Parse(args.First()) / 100));
+                                    foreach (var attachment in arg.Message.Attachments)
+                                    {
+                                        try
+                                        {
+                                            var filename = Path.GetFileNameWithoutExtension(attachment.FileName) + ".png";
+                                            using var stream = Client.OpenRead(attachment.Url);
+                                            var img = new Bitmap(stream);
+                                            for (int x = 0; x < img.Size.Width; x++)
+                                            {
+                                                for (int y = 0; y < img.Size.Height; y++)
+                                                {
+                                                    var pixel = img.GetPixel(x, y);
+                                                    byte r = pixel.R;
+                                                    byte g = pixel.G;
+                                                    byte b = pixel.B;
+                                                    byte noise = (byte)(Random.NextDouble() * amplitude * 100);
+                                                    const double threshold = .2;
+                                                    r = (byte)(r < amplitude * threshold * 255 ?
+                                                                0 :
+                                                                r > 255 - 255 * amplitude * threshold ?
+                                                                    255 :
+                                                                    map(r, 255 * amplitude * threshold, 255 - 255 * amplitude * threshold, 0, 255));
+                                                    g = (byte)(r < amplitude * threshold * 255 ?
+                                                                0 :
+                                                                g > 255 - 255 * amplitude * threshold ?
+                                                                    255 :
+                                                                    map(g, 255 * amplitude * threshold, 255 - 255 * amplitude * threshold, 0, 255));
+                                                    g = (byte)(g < amplitude * threshold * 255 ?
+                                                                0 :
+                                                                g > 255 - 255 * amplitude * threshold ?
+                                                                    255 :
+                                                                    map(g, 255 * amplitude * threshold, 255 - 255 * amplitude * threshold, 0, 255));
+                                                    b = (byte)(b < amplitude * threshold * 255 ?
+                                                                0 :
+                                                                b > 255 - 255 * amplitude * threshold ?
+                                                                    255 :
+                                                                    map(b, 255 * amplitude * threshold, 255 - 255 * amplitude * threshold, 0, 255));
+                                                    if (Random.Next() % 2 == 0)
+                                                    {
+                                                        r += (byte)Math.Min(255 - r, noise);
+                                                        g += (byte)Math.Min(255 - g, noise);
+                                                        b += (byte)Math.Min(255 - b, noise);
+                                                    }
+                                                    else
+                                                    {
+                                                        r -= Math.Min(r, noise);
+                                                        g -= Math.Min(g, noise);
+                                                        b -= Math.Min(b, noise);
+                                                    }
+                                                    img.SetPixel(x, y, Color.FromArgb(pixel.A, r, g, b));
+                                                }
+                                            }
+                                            using var memory = new MemoryStream();
+                                            img.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+                                            memory.Seek(0, SeekOrigin.Begin);
+                                            await arg.Message.RespondWithFileAsync(memory, filename);
+                                        }
+                                        catch (Exception) { }
+                                    }
+                                }
+                                break;
+
+                            case "jpeg":
+                            case "jpg":
+                                {
+                                    long quality = 0;
+                                    if (args.Length > 0)
+                                        quality = long.Parse(args.First());
+                                    foreach (var attachment in arg.Message.Attachments)
+                                    {
+                                        var filename = Path.GetFileNameWithoutExtension(attachment.FileName) + ".jpg";
+                                        try
+                                        {
+                                            using var stream = Client.OpenRead(attachment.Url);
+                                            var img = new Bitmap(stream);
+                                            var jpgEncoder = ImageCodecInfo.GetImageDecoders().First(dec => dec.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
+                                            var parameters = new EncoderParameters(1);
+                                            parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality);
+                                            using var memory = new MemoryStream();
+                                            img.Save(memory, jpgEncoder, parameters);
+                                            memory.Seek(0, SeekOrigin.Begin);
+                                            await arg.Message.RespondWithFileAsync(memory, filename);
+                                        }
+                                        catch (Exception) { }
+                                    }
+                                }
                                 break;
 
                             case "logic":

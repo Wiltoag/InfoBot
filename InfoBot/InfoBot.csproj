@@ -15,6 +15,7 @@
     <PackageReference Include="Figgle" Version="0.3.0" />
     <PackageReference Include="Ical.Net" Version="4.1.11" />
     <PackageReference Include="IcalToImage" Version="0.1.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
   </ItemGroup>
 
