@@ -425,7 +425,11 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                                         pixel.A,
                                                         pixel.GetHue(),
                                                         map(amplitude, 0, 1, pixel.GetSaturation(), 1),
-                                                        map(amplitude, 0, 1, pixel.GetBrightness(), pixel.GetBrightness() > .97 ? 1 : .5));
+                                                        map(amplitude, 0, 1, pixel.GetBrightness(), pixel.GetBrightness() > .97 ?
+                                                            1 :
+                                                            pixel.GetBrightness() < .05 ?
+                                                            0 :
+                                                            .5));
                                                     r = pixel.R;
                                                     g = pixel.G;
                                                     b = pixel.B;
