@@ -472,6 +472,26 @@ namespace InfoBot
                                         await TagsChannel.SendMessageAsync(sb.ToString());
                                     }
                                 }
+                                {
+                                    if (new string(content.ToArray()[^4..^0]) == "tine")
+                                    {
+                                        int index = content.Length - 1;
+                                        while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                            index--;
+                                        await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..^3]) + ", pas " + new string(content.ToArray()[index..^0]));
+                                    }
+                                    for (int i = 0; i < content.Length - 5; i++)
+                                    {
+                                        if (new string(content.ToArray()[i..(i + 5)]) == "tine ")
+                                        {
+                                            int index = i + 1;
+                                            while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                                index--;
+                                            index++;
+                                            await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..(i + 1)]) + ", pas " + new string(content.ToArray()[index..(i + 4)]));
+                                        }
+                                    }
+                                }
                             }
                         }
                         catch (Exception)
