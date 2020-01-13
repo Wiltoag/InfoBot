@@ -76,6 +76,11 @@ namespace InfoBot
         private static DateTime LastEdtCheck;
 
         /// <summary>
+        /// The next time the bot will restart its client to stay connected in some cases
+        /// </summary>
+        private static DateTime NextRestart;
+
+        /// <summary>
         /// The old hash of each edt (sorted by their group). Used to detect changes in differents edt.
         /// </summary>
         private static int[] OldICalHash;
@@ -230,7 +235,7 @@ namespace InfoBot
             Console.ForegroundColor = DefaultColor;
             Console.WriteLine("Initalization...");
             ///////////////////////////////////////
-
+            NextRestart = DateTime.Now + TimeSpan.FromHours(1);
             Random = new Random();
             Dispatcher = new Dispatcher();
             var consoleThread = new Thread(ConsoleManager);
@@ -527,6 +532,234 @@ namespace InfoBot
                 {
                     lastCalendarCheck = DateTimeOffset.Now;
                     ExecuteAsyncMethod(async () => UpdateCalendars());
+                }
+                if (NextRestart < DateTime.Now)
+                {
+                    NextRestart = DateTime.Now + TimeSpan.FromHours(1);
+                    try
+                    {
+                        Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+                    }
+                    catch (Exception)
+                    {
+                    }
+                    Console.WriteLine("Reconnecting...");
+                    if (!ExecuteAsyncMethod(() => Discord.ConnectAsync()))
+                        Environment.Exit(0);
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Connected");
+                    Console.ForegroundColor = DefaultColor;
+                    Console.WriteLine("Initalization...");
+                    ExecuteAsyncMethod(() => Discord.GetGuildAsync(437704877221609472), out TestServer);
+                    InitCommands();
+                    ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
+                    LoadData();
+                    //whenever a messages gets created...
+                    Discord.MessageCreated += async (arg) =>
+                    {
+                        //we execute in the same thread using the dispatcher
+                        Dispatcher.Execute(async () =>
+                        {
+                            //native exception handling, preventing crashes
+                            ExecuteAsyncMethod(async () =>
+                            {
+                                //for messages containing "c'était sûr" to respond with our lord and savior Sardoche
+                                var content = arg.Message.Content;
+                                content = content.ToLower();
+                                var newStr = "";
+                                foreach (var c in content)
+                                {
+                                    if (c != ' ' && c != '\'')
+                                    {
+                                        if (c == 'é')
+                                            newStr += 'e';
+                                        else if (c == 'û')
+                                            newStr += 'u';
+                                        else
+                                            newStr += c;
+                                    }
+                                }
+                                if (newStr.Contains("cetaitsur"))
+                                    await arg.Message.RespondAsync("https://cdn.discordapp.com/attachments/619513575295418392/625709998692892682/sardoche.gif");
+                            });
+                        });
+                    };
+                    //same as above
+                    Discord.MessageCreated += async (arg) =>
+                    {
+                        Dispatcher.Execute(async () =>
+                        {
+                            ExecuteAsyncMethod(async () =>
+                            {
+                                var content = arg.Message.Content;
+                                try
+                                {
+                                    //handling revenge lyrics
+                                    if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .8 && !arg.Author.IsBot)
+                                    {
+                                        //if a similarity has been detected and it's not comming from a bot
+                                        RevengeCurrLine += 2;
+                                        //we test if we are at the end of the song
+                                        if (RevengeCurrLine - 1 < revengeLines.Length)
+                                            await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
+                                        else
+                                            RevengeCurrLine = 0;
+                                    }
+                                    else if (GetSimplifiedString(content).Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
+                                    {
+                                        //if we start over again (first line of the lyrics)
+                                        RevengeCurrLine = 2;
+                                        await arg.Message.RespondAsync(revengeLines[1]);
+                                    }
+                                    //handling all star lyrics
+                                    if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .8 && !arg.Author.IsBot)
+                                    {
+                                        //if a similarity has been detected and it's not comming from a bot
+                                        AllstarCurrLine += 2;
+                                        //we test if we are at the end of the song
+                                        if (AllstarCurrLine - 1 < allstarLines.Length)
+                                            await arg.Message.RespondAsync(allstarLines[AllstarCurrLine - 1]);
+                                        else
+                                            AllstarCurrLine = 0;
+                                    }
+                                    else if (GetSimplifiedString(content).Contains(GetSimplifiedString(allstarLines[0])) && !arg.Author.IsBot)
+                                    {
+                                        //if we start over again (first line of the lyrics)
+                                        AllstarCurrLine = 2;
+                                        await arg.Message.RespondAsync(allstarLines[1]);
+                                    }
+                                    //same as above, but for deja vu
+                                    if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .8 && !arg.Author.IsBot)
+                                    {
+                                        DejavuCurrLine += 2;
+                                        if (DejavuCurrLine - 1 < dejavuLines.Length)
+                                            await arg.Message.RespondAsync(dejavuLines[DejavuCurrLine - 1]);
+                                        else
+                                            DejavuCurrLine = 0;
+                                    }
+                                    else if (GetSimplifiedString(content).Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
+                                    {
+                                        //special starting point, where it it "deja vu !"
+                                        DejavuCurrLine = 10;
+                                        await arg.Message.RespondAsync(dejavuLines[9]);
+                                    }
+                                    else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .8 && !arg.Author.IsBot)
+                                    {
+                                        DejavuCurrLine = 2;
+                                        await arg.Message.RespondAsync(dejavuLines[1]);
+                                    }
+                                    if (!arg.Author.IsBot)
+                                    {
+                                        for (int i = 0; i < content.Length - 5; i++)
+                                        {
+                                            string strNumber = content.Substring(i, 6);
+                                            bool correctPattern = true;
+                                            if (i > 0 && char.IsDigit(content[i - 1]))
+                                                correctPattern = false;
+                                            if (i < content.Length - 6 && char.IsDigit(content[i + 6]))
+                                                correctPattern = false;
+                                            foreach (var item in strNumber)
+                                                if (!char.IsDigit(item))
+                                                    correctPattern = false;
+                                            if (correctPattern)
+                                            {
+                                                var address = "https://nhentai.net/g/" + strNumber;
+                                                var html = Client.DownloadString(address);
+                                                string title = "";
+                                                {
+                                                    var begin = -1;
+                                                    for (int j = 0; j < html.Length - 4; j++)
+                                                        if (html.Substring(j, 4) == "<h1>")
+                                                            begin = j + 4;
+                                                    for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                                        title += html[j];
+                                                    title.Trim(' ', '\t', '\n', '\r');
+                                                }
+                                                if (title.Contains("404"))
+                                                    continue;
+                                                var sb = new StringBuilder();
+                                                sb.Append("Tag :__");
+                                                sb.Append(strNumber);
+                                                sb.Append("__ posted by **");
+                                                sb.Append(arg.Author.Username);
+                                                sb.Append("** __");
+                                                sb.Append(title);
+                                                sb.Append("__\nAvailable here : ");
+                                                sb.Append(address);
+                                                await TagsChannel.SendMessageAsync(sb.ToString());
+                                            }
+                                        }
+                                        for (int i = 0; i < content.Length - 4; i++)
+                                        {
+                                            string strNumber = content.Substring(i, 5);
+                                            bool correctPattern = true;
+                                            if (i > 0 && char.IsDigit(content[i - 1]))
+                                                correctPattern = false;
+                                            if (i < content.Length - 5 && char.IsDigit(content[i + 5]))
+                                                correctPattern = false;
+                                            foreach (var item in strNumber)
+                                                if (!char.IsDigit(item))
+                                                    correctPattern = false;
+                                            if (correctPattern)
+                                            {
+                                                var address = "https://nhentai.net/g/" + strNumber;
+                                                var html = Client.DownloadString(address);
+                                                string title = "";
+                                                {
+                                                    var begin = -1;
+                                                    for (int j = 0; j < html.Length - 4; j++)
+                                                        if (html.Substring(j, 4) == "<h1>")
+                                                            begin = j + 4;
+                                                    for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                                        title += html[j];
+                                                    title.Trim(' ', '\t', '\n', '\r');
+                                                }
+                                                if (title.Contains("404"))
+                                                    continue;
+                                                var sb = new StringBuilder();
+                                                sb.Append("Tag :__");
+                                                sb.Append(strNumber);
+                                                sb.Append("__ posted by **");
+                                                sb.Append(arg.Author.Username);
+                                                sb.Append("** __");
+                                                sb.Append(title);
+                                                sb.Append("__\nAvailable here : ");
+                                                sb.Append(address);
+                                                await TagsChannel.SendMessageAsync(sb.ToString());
+                                            }
+                                        }
+                                        {
+                                            if (new string(content.ToArray()[^4..^0]) == "tine")
+                                            {
+                                                int index = content.Length - 1;
+                                                while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                                    index--;
+                                                await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..^3]) + ", pas " + new string(content.ToArray()[index..^0]));
+                                            }
+                                            for (int i = 0; i < content.Length - 5; i++)
+                                            {
+                                                if (new string(content.ToArray()[i..(i + 5)]) == "tine ")
+                                                {
+                                                    int index = i + 1;
+                                                    while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                                        index--;
+                                                    index++;
+                                                    await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..(i + 1)]) + ", pas " + new string(content.ToArray()[index..(i + 4)]));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                catch (Exception)
+                                { }
+                            });
+                        });
+                    };
+
+                    ///////////////////////////////////////
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Initialized");
+                    Console.ForegroundColor = DefaultColor;
                 }
                 //give some resting time to that poor CPU !
                 Thread.Sleep(TimeSpan.FromMilliseconds(50));
