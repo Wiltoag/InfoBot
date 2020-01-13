@@ -478,7 +478,7 @@ namespace InfoBot
                                     }
                                 }
                                 {
-                                    if (new string(content.ToArray()[^4..^0]) == "tine")
+                                    if (new string(content.ToArray()[^3..^0]) == "ine")
                                     {
                                         int index = content.Length - 1;
                                         while (index != 0 && !char.IsWhiteSpace(content[index]))
@@ -487,21 +487,21 @@ namespace InfoBot
                                             index++;
                                         await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..^3]) + ", pas " + new string(content.ToArray()[index..^0]));
                                     }
-                                    for (int i = 0; i < content.Length - 5; i++)
+                                    for (int i = 0; i < content.Length - 4; i++)
                                     {
-                                        if (new string(content.ToArray()[i..(i + 5)]) == "tine ")
+                                        if (new string(content.ToArray()[i..(i + 4)]) == "ine ")
                                         {
                                             int index = i + 1;
                                             while (index != 0 && !char.IsWhiteSpace(content[index]))
                                                 index--;
                                             if (char.IsWhiteSpace(content[index]))
                                                 index++;
-                                            await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..(i + 1)]) + ", pas " + new string(content.ToArray()[index..(i + 4)]));
+                                            await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 3)]));
                                         }
                                     }
                                 }
                                 {
-                                    if (new string(content.ToArray()[^5..^0]) == "tines")
+                                    if (new string(content.ToArray()[^4..^0]) == "ines")
                                     {
                                         int index = content.Length - 1;
                                         while (index != 0 && !char.IsWhiteSpace(content[index]))
@@ -510,16 +510,16 @@ namespace InfoBot
                                             index++;
                                         await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..^4]) + ", pas " + new string(content.ToArray()[index..^0]));
                                     }
-                                    for (int i = 0; i < content.Length - 6; i++)
+                                    for (int i = 0; i < content.Length - 5; i++)
                                     {
-                                        if (new string(content.ToArray()[i..(i + 6)]) == "tines ")
+                                        if (new string(content.ToArray()[i..(i + 5)]) == "ines ")
                                         {
                                             int index = i + 1;
                                             while (index != 0 && !char.IsWhiteSpace(content[index]))
                                                 index--;
                                             if (char.IsWhiteSpace(content[index]))
                                                 index++;
-                                            await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..(i + 1)]) + ", pas " + new string(content.ToArray()[index..(i + 5)]));
+                                            await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 4)]));
                                         }
                                     }
                                 }
