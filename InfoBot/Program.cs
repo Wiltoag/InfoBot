@@ -478,11 +478,12 @@ namespace InfoBot
                                     }
                                 }
                                 {
+                                    var vowels = "aeiouy";
                                     var lower = content.ToLower();
-                                    if (new string(lower.ToArray()[^3..^0]) == "ine")
+                                    if (new string(lower.ToArray()[^3..^0]) == "ine" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^4]))
                                     {
                                         int index = lower.Length - 1;
-                                        while (index != 0 && !char.IsWhiteSpace(lower[index]))
+                                        while (index != 0 && char.IsLetter(lower[index]))
                                             index--;
                                         if (char.IsWhiteSpace(lower[index]))
                                             index++;
@@ -490,10 +491,10 @@ namespace InfoBot
                                     }
                                     for (int i = 0; i < lower.Length - 4; i++)
                                     {
-                                        if (new string(lower.ToArray()[i..(i + 4)]) == "ine ")
+                                        if (new string(lower.ToArray()[i..(i + 4)]) == "ine " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
                                         {
                                             int index = i + 1;
-                                            while (index != 0 && !char.IsWhiteSpace(lower[index]))
+                                            while (index != 0 && char.IsLetter(lower[index]))
                                                 index--;
                                             if (char.IsWhiteSpace(lower[index]))
                                                 index++;
@@ -502,11 +503,12 @@ namespace InfoBot
                                     }
                                 }
                                 {
+                                    var vowels = "aeiouy";
                                     var lower = content.ToLower();
-                                    if (new string(lower.ToArray()[^4..^0]) == "ines")
+                                    if (new string(lower.ToArray()[^4..^0]) == "ines" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^5]))
                                     {
                                         int index = lower.Length - 1;
-                                        while (index != 0 && !char.IsWhiteSpace(lower[index]))
+                                        while (index != 0 && char.IsLetter(lower[index]))
                                             index--;
                                         if (char.IsWhiteSpace(lower[index]))
                                             index++;
@@ -514,10 +516,10 @@ namespace InfoBot
                                     }
                                     for (int i = 0; i < content.Length - 5; i++)
                                     {
-                                        if (new string(lower.ToArray()[i..(i + 5)]) == "ines ")
+                                        if (new string(lower.ToArray()[i..(i + 5)]) == "ines " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
                                         {
                                             int index = i + 1;
-                                            while (index != 0 && !char.IsWhiteSpace(lower[index]))
+                                            while (index != 0 && char.IsLetter(lower[index]))
                                                 index--;
                                             if (char.IsWhiteSpace(lower[index]))
                                                 index++;
