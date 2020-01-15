@@ -478,46 +478,48 @@ namespace InfoBot
                                     }
                                 }
                                 {
-                                    if (new string(content.ToArray()[^3..^0]) == "ine")
+                                    var lower = content.ToLower();
+                                    if (new string(lower.ToArray()[^3..^0]) == "ine")
                                     {
-                                        int index = content.Length - 1;
-                                        while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                        int index = lower.Length - 1;
+                                        while (index != 0 && !char.IsWhiteSpace(lower[index]))
                                             index--;
-                                        if (char.IsWhiteSpace(content[index]))
+                                        if (char.IsWhiteSpace(lower[index]))
                                             index++;
                                         await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..^3]) + ", pas " + new string(content.ToArray()[index..^0]));
                                     }
-                                    for (int i = 0; i < content.Length - 4; i++)
+                                    for (int i = 0; i < lower.Length - 4; i++)
                                     {
-                                        if (new string(content.ToArray()[i..(i + 4)]) == "ine ")
+                                        if (new string(lower.ToArray()[i..(i + 4)]) == "ine ")
                                         {
                                             int index = i + 1;
-                                            while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                            while (index != 0 && !char.IsWhiteSpace(lower[index]))
                                                 index--;
-                                            if (char.IsWhiteSpace(content[index]))
+                                            if (char.IsWhiteSpace(lower[index]))
                                                 index++;
                                             await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 3)]));
                                         }
                                     }
                                 }
                                 {
-                                    if (new string(content.ToArray()[^4..^0]) == "ines")
+                                    var lower = content.ToLower();
+                                    if (new string(lower.ToArray()[^4..^0]) == "ines")
                                     {
-                                        int index = content.Length - 1;
-                                        while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                        int index = lower.Length - 1;
+                                        while (index != 0 && !char.IsWhiteSpace(lower[index]))
                                             index--;
-                                        if (char.IsWhiteSpace(content[index]))
+                                        if (char.IsWhiteSpace(lower[index]))
                                             index++;
                                         await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..^4]) + ", pas " + new string(content.ToArray()[index..^0]));
                                     }
                                     for (int i = 0; i < content.Length - 5; i++)
                                     {
-                                        if (new string(content.ToArray()[i..(i + 5)]) == "ines ")
+                                        if (new string(lower.ToArray()[i..(i + 5)]) == "ines ")
                                         {
                                             int index = i + 1;
-                                            while (index != 0 && !char.IsWhiteSpace(content[index]))
+                                            while (index != 0 && !char.IsWhiteSpace(lower[index]))
                                                 index--;
-                                            if (char.IsWhiteSpace(content[index]))
+                                            if (char.IsWhiteSpace(lower[index]))
                                                 index++;
                                             await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 4)]));
                                         }
@@ -564,6 +566,8 @@ namespace InfoBot
                 if (NextRestart < DateTime.Now)
                 {
                     NextRestart = DateTime.Now + TimeSpan.FromHours(1);
+                    ExecuteAsyncMethod(() => Discord.DisconnectAsync());
+                    Discord.Dispose();
                     try
                     {
                         Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
