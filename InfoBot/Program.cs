@@ -512,7 +512,7 @@ namespace InfoBot
                                             index--;
                                         if (char.IsWhiteSpace(lower[index]))
                                             index++;
-                                        await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..^4]) + ", pas " + new string(content.ToArray()[index..^0]));
+                                        await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..^4]) + "s, pas " + new string(content.ToArray()[index..^0]));
                                     }
                                     for (int i = 0; i < content.Length - 5; i++)
                                     {
@@ -523,7 +523,7 @@ namespace InfoBot
                                                 index--;
                                             if (char.IsWhiteSpace(lower[index]))
                                                 index++;
-                                            await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 4)]));
+                                            await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + "s, pas " + new string(content.ToArray()[index..(i + 4)]));
                                         }
                                     }
                                 }
