@@ -206,12 +206,12 @@ namespace InfoBot
             TPRoles = new DiscordRole[8];
             CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=e81e5e310001831"; //1.1
             CalendarUrl[1] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //1.2
-            CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=329314450001800"; //2.1
+            CalendarUrl[2] = ""; //2.1
             CalendarUrl[3] = ""; //2.2
-            CalendarUrl[4] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=7a533fe97001770"; //3.1
-            CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=b4a52df5e501843"; //3.2
-            CalendarUrl[6] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=561e49e97901779"; //4.1
-            CalendarUrl[7] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=3a1ee9527101771"; //4.2
+            CalendarUrl[4] = ""; //3.1
+            CalendarUrl[5] = ""; //3.2
+            CalendarUrl[6] = ""; //4.1
+            CalendarUrl[7] = ""; //4.2
             Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
             string token;
@@ -1096,6 +1096,28 @@ namespace InfoBot
                         catch (Exception)
                         {
                             //if no ical is provided, we just ignore it. I already give enough the the promotion, if they don't give me the link, fuck them.
+                            IReadOnlyList<DiscordMessage> messages;
+                            ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
+                            if (messages != null)
+                            {
+                                foreach (var mess in messages)
+                                {
+                                    //if they come from a bot (me), we just delete them
+                                    if (mess.Author.IsBot)
+                                        ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
+                                }
+                            }
+                            DiscordUser Me;
+                            ExecuteAsyncMethod(() => Discord.GetUserAsync(290563482347241472), out Me);
+                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(
+TPRoles[i].Mention +
+@"
+Aucun emploi du temps trouvé, merci d'envoyer à " + Me.Mention + @" le lien du ICalendar :
+allez ici : https://dptinfo.iutmetz.univ-lorraine.fr/lna/
+connectez vous
+cliquez sur ""emploi du temps""
+cliquez sur le qr code
+envoyez l'url complète qui s'affiche en message privé, ainsi que votre groupe TP!"));
                             continue;
                         }
                         //if we find a difference in the ical (we check the length of the string, which isn't very smart i know) or if we changed week
@@ -1120,7 +1142,7 @@ namespace InfoBot
                                 foreach (var mess in messages)
                                 {
                                     //if they come from a bot (me), we just delete them
-                                    if (mess.Author.IsCurrent)
+                                    if (mess.Author.IsBot)
                                         ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
                                 }
                             }
