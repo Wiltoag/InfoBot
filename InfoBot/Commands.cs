@@ -334,13 +334,13 @@ logic <equation>                                  generate a logic table of the 
 ______________________________________________________________
 logic -help                                       display the help pannel for this command
 ______________________________________________________________
-jpg [<quality>]                                   converts the linked image into a jpeg with a custom compression ranging from 0 to 100 (0 by default, to ""add more jpeg"")
+jpg [<quality>]                                   converts the linked image (or the image above the message) into a jpeg with a custom compression ranging from 0 to 100 (0 by default, to ""add more jpeg"")
     example : >ib jpg 50
 ______________________________________________________________
 jpeg [<quality>]                                  same as above
     example : >ib jpeg 50
 ______________________________________________________________
-deepfried [<amplitude>]                           transforms an image into a deep fried version. The amplitude ranges from 0 to 100 (100 by default for... D E E P   F R I E D)
+deepfried [<amplitude>]                           transforms an image into a deep fried (or the image above the message) version. The amplitude ranges from 0 to 100 (100 by default for... D E E P   F R I E D)
     example : >ib deepfried 50
 ```");
                                 break;
@@ -394,7 +394,33 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                     double amplitude = 1;
                                     if (args.Length > 0)
                                         amplitude = Math.Max(0, Math.Min(1, double.Parse(args.First()) / 100));
+                                    var attachments = new List<DiscordAttachment>();
                                     foreach (var attachment in arg.Message.Attachments)
+                                        attachments.Add(attachment);
+                                    if (attachments.Count == 0)
+                                    {
+                                        var messages = await arg.Channel.GetMessagesAsync(5, arg.Message.Id);
+                                        foreach (var mess in messages)
+                                        {
+                                            if (mess.Attachments.Count > 0)
+                                            {
+                                                var found = false;
+                                                foreach (var att in mess.Attachments.Reverse())
+                                                {
+                                                    var ext = Path.GetExtension(att.FileName);
+                                                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
+                                                    {
+                                                        found = true;
+                                                        attachments.Add(att);
+                                                        break;
+                                                    }
+                                                }
+                                                if (found)
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                    foreach (var attachment in attachments)
                                     {
                                         try
                                         {
@@ -470,7 +496,33 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                     long quality = 0;
                                     if (args.Length > 0)
                                         quality = long.Parse(args.First());
+                                    var attachments = new List<DiscordAttachment>();
                                     foreach (var attachment in arg.Message.Attachments)
+                                        attachments.Add(attachment);
+                                    if (attachments.Count == 0)
+                                    {
+                                        var messages = await arg.Channel.GetMessagesAsync(5, arg.Message.Id);
+                                        foreach (var mess in messages)
+                                        {
+                                            if (mess.Attachments.Count > 0)
+                                            {
+                                                var found = false;
+                                                foreach (var att in mess.Attachments.Reverse())
+                                                {
+                                                    var ext = Path.GetExtension(att.FileName);
+                                                    if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
+                                                    {
+                                                        found = true;
+                                                        attachments.Add(att);
+                                                        break;
+                                                    }
+                                                }
+                                                if (found)
+                                                    break;
+                                            }
+                                        }
+                                    }
+                                    foreach (var attachment in attachments)
                                     {
                                         var filename = Path.GetFileNameWithoutExtension(attachment.FileName) + ".jpg";
                                         try
