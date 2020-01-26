@@ -1096,7 +1096,7 @@ namespace InfoBot
                         catch (Exception)
                         {
                             //if no ical is provided, we just ignore it. I already give enough the the promotion, if they don't give me the link, fuck them.
-                            IReadOnlyList<DiscordMessage> messages;
+                            /*IReadOnlyList<DiscordMessage> messages;
                             ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
                             if (messages != null)
                             {
@@ -1117,7 +1117,7 @@ allez ici : https://dptinfo.iutmetz.univ-lorraine.fr/lna/
 connectez vous
 cliquez sur ""emploi du temps""
 cliquez sur le qr code
-envoyez l'url complète qui s'affiche en message privé, ainsi que votre groupe TP!"));
+envoyez l'url complète qui s'affiche en message privé, ainsi que votre groupe TP!"));*/
                             continue;
                         }
                         //if we find a difference in the ical (we check the length of the string, which isn't very smart i know) or if we changed week
