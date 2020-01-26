@@ -330,12 +330,18 @@ ______________________________________________________________
                                 await arg.Channel.SendMessageAsync(
 @"```
 logic <equation>                                  generate a logic table of the equation
-    example logic ""A -> !B""
+    example : >ib logic ""A -> !B""
 ______________________________________________________________
 logic -help                                       display the help pannel for this command
+______________________________________________________________
 jpg [<quality>]                                   converts the linked image into a jpeg with a custom compression ranging from 0 to 100 (0 by default, to ""add more jpeg"")
+    example : >ib jpg 50
+______________________________________________________________
 jpeg [<quality>]                                  same as above
+    example : >ib jpeg 50
+______________________________________________________________
 deepfried [<amplitude>]                           transforms an image into a deep fried version. The amplitude ranges from 0 to 100 (100 by default for... D E E P   F R I E D)
+    example : >ib deepfried 50
 ```");
                                 break;
 
