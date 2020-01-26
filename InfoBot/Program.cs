@@ -210,7 +210,7 @@ namespace InfoBot
             CalendarUrl[3] = ""; //2.2
             CalendarUrl[4] = ""; //3.1
             CalendarUrl[5] = ""; //3.2
-            CalendarUrl[6] = ""; //4.1
+            CalendarUrl[6] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=25e452e58201781"; //4.1
             CalendarUrl[7] = ""; //4.2
             Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
