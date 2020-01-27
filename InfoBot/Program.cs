@@ -41,7 +41,7 @@ namespace InfoBot
         private static List<Autorun> Autoruns;
 
         /// <summary>
-        /// Global HTTP client for edt purposes atm
+        /// Global HTTP client
         /// </summary>
         private static WebClient Client;
 

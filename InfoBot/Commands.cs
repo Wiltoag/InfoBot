@@ -8,6 +8,8 @@ using DSharpPlus;
 using DSharpPlus.Entities;
 using System.Drawing.Imaging;
 using System.Drawing;
+using System.Net;
+using System.Globalization;
 
 namespace InfoBot
 {
@@ -395,25 +397,55 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                         double amplitude = 1;
                                         if (args.Length > 0)
                                             amplitude = Math.Max(0, Math.Min(1, double.Parse(args.First()) / 100));
-                                        var attachments = new List<DiscordAttachment>();
+                                        var attachments = new List<Tuple<string, string>>();
                                         foreach (var attachment in arg.Message.Attachments)
-                                            attachments.Add(attachment);
+                                            attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
                                         if (attachments.Count == 0)
                                         {
                                             var messages = await arg.Channel.GetMessagesAsync(5, arg.Message.Id);
                                             foreach (var mess in messages)
                                             {
+                                                var found = false;
                                                 if (mess.Attachments.Count > 0)
                                                 {
-                                                    var found = false;
                                                     foreach (var att in mess.Attachments.Reverse())
                                                     {
                                                         var ext = Path.GetExtension(att.FileName);
                                                         if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
                                                         {
                                                             found = true;
-                                                            attachments.Add(att);
+                                                            attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
                                                             break;
+                                                        }
+                                                    }
+                                                    if (found)
+                                                        break;
+                                                }
+                                                {
+                                                    for (int i = mess.Content.Length - 5; i >= 0; i--)
+                                                    {
+                                                        if (mess.Content.Substring(i, 4) == "http")
+                                                        {
+                                                            var url = "";
+                                                            while (!char.IsWhiteSpace(mess.Content[i]))
+                                                            {
+                                                                url += mess.Content[i];
+                                                                i++;
+                                                                if (i == mess.Content.Length)
+                                                                    break;
+                                                            }
+                                                            //https://stackoverflow.com/a/11083097
+                                                            var req = WebRequest.Create(url);
+                                                            req.Method = "HEAD";
+                                                            using (var resp = req.GetResponse())
+                                                            {
+                                                                if (resp.ContentType.ToLower(CultureInfo.InvariantCulture).StartsWith("image/"))
+                                                                {
+                                                                    found = true;
+                                                                    attachments.Add(new Tuple<string, string>("unknown.png", url));
+                                                                    break;
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                     if (found)
@@ -425,8 +457,8 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                         {
                                             try
                                             {
-                                                var filename = Path.GetFileNameWithoutExtension(attachment.FileName) + ".png";
-                                                using var stream = Client.OpenRead(attachment.Url);
+                                                var filename = Path.GetFileNameWithoutExtension(attachment.Item1) + ".png";
+                                                using var stream = Client.OpenRead(attachment.Item2);
                                                 var img = new Bitmap(stream);
                                                 for (int x = 0; x < img.Size.Width; x++)
                                                 {
@@ -497,25 +529,55 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                         long quality = 0;
                                         if (args.Length > 0)
                                             quality = long.Parse(args.First());
-                                        var attachments = new List<DiscordAttachment>();
+                                        var attachments = new List<Tuple<string, string>>();
                                         foreach (var attachment in arg.Message.Attachments)
-                                            attachments.Add(attachment);
+                                            attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
                                         if (attachments.Count == 0)
                                         {
                                             var messages = await arg.Channel.GetMessagesAsync(5, arg.Message.Id);
                                             foreach (var mess in messages)
                                             {
+                                                var found = false;
                                                 if (mess.Attachments.Count > 0)
                                                 {
-                                                    var found = false;
                                                     foreach (var att in mess.Attachments.Reverse())
                                                     {
                                                         var ext = Path.GetExtension(att.FileName);
                                                         if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
                                                         {
                                                             found = true;
-                                                            attachments.Add(att);
+                                                            attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
                                                             break;
+                                                        }
+                                                    }
+                                                    if (found)
+                                                        break;
+                                                }
+                                                {
+                                                    for (int i = mess.Content.Length - 5; i >= 0; i--)
+                                                    {
+                                                        if (mess.Content.Substring(i, 4) == "http")
+                                                        {
+                                                            var url = "";
+                                                            while (!char.IsWhiteSpace(mess.Content[i]))
+                                                            {
+                                                                url += mess.Content[i];
+                                                                i++;
+                                                                if (i == mess.Content.Length)
+                                                                    break;
+                                                            }
+                                                            //https://stackoverflow.com/a/11083097
+                                                            var req = WebRequest.Create(url);
+                                                            req.Method = "HEAD";
+                                                            using (var resp = req.GetResponse())
+                                                            {
+                                                                if (resp.ContentType.ToLower(CultureInfo.InvariantCulture).StartsWith("image/"))
+                                                                {
+                                                                    found = true;
+                                                                    attachments.Add(new Tuple<string, string>("unknown.png", url));
+                                                                    break;
+                                                                }
+                                                            }
                                                         }
                                                     }
                                                     if (found)
@@ -525,10 +587,10 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                         }
                                         foreach (var attachment in attachments)
                                         {
-                                            var filename = Path.GetFileNameWithoutExtension(attachment.FileName) + ".jpg";
+                                            var filename = Path.GetFileNameWithoutExtension(attachment.Item1) + ".jpg";
                                             try
                                             {
-                                                using var stream = Client.OpenRead(attachment.Url);
+                                                using var stream = Client.OpenRead(attachment.Item2);
                                                 var img = new Bitmap(stream);
                                                 var jpgEncoder = ImageCodecInfo.GetImageDecoders().First(dec => dec.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
                                                 var parameters = new EncoderParameters(1);
