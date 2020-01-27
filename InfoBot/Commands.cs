@@ -10,6 +10,7 @@ using System.Drawing.Imaging;
 using System.Drawing;
 using System.Net;
 using System.Globalization;
+using System.Numerics;
 
 namespace InfoBot
 {
@@ -345,7 +346,81 @@ jpeg [<quality>]                                  same as above
 ______________________________________________________________
 deepfried [<amplitude>]                           transforms an image into a deep fried (or the image above the message) version. The amplitude ranges from 0 to 100 (100 by default for... D E E P   F R I E D)
     example : >ib deepfried 50
+______________________________________________________________
+blur                                              blurs an image (or the image above the message).
+    example : >ib blur
 ```");
+                                    break;
+
+                                case "blur":
+                                    {
+                                        var attachments = await GetLinkedImages(arg.Message);
+                                        foreach (var attachment in attachments)
+                                        {
+                                            var filename = Path.GetFileNameWithoutExtension(attachment.Item1) + ".png";
+                                            try
+                                            {
+                                                using var stream = Client.OpenRead(attachment.Item2);
+                                                var img = new Bitmap(stream);
+                                                if (img.Width * img.Height > 500 * 500)
+                                                    img = Resize(img, 500f * 500 / (img.Width * img.Height));
+                                                float ScaleFactor = 1;
+                                                if (img.Width * img.Height > 350 * 350)
+                                                {
+                                                    ScaleFactor = 350f * 350 / (img.Width * img.Height);
+
+                                                    img = Resize(img, ScaleFactor);
+                                                }
+                                                var maxX = img.Width / 100;
+                                                var maxY = img.Width / 100;
+                                                var copy = new Bitmap(img);
+                                                var middle = new Vector2(img.Width / 2, img.Height / 2);
+                                                for (int x = 0; x < img.Width; x++)
+                                                {
+                                                    for (int y = 0; y < img.Height; y++)
+                                                    {
+                                                        var originalPixel = img.GetPixel(x, y);
+                                                        var current = new Vector2(x, y);
+                                                        var direction = middle - current;
+                                                        var matrix = Matrix3x2.CreateRotation((float)Math.Atan2(direction.Y, direction.X)) * Matrix3x2.CreateTranslation(current);
+                                                        Matrix3x2.Invert(matrix, out matrix);
+                                                        var intensity = (float)Math.Min(Math.Pow((middle - new Vector2(x, y)).Length() * 1.1f / (Math.Max(img.Width, img.Height) / 2), 1f / 6), 1);
+                                                        var left = Math.Max(x - maxX, 0);
+                                                        var right = Math.Min(x + maxX, img.Width - 1);
+                                                        var up = Math.Max(y - maxY, 0);
+                                                        var down = Math.Min(y + maxY, img.Height - 1);
+                                                        long totalR = 0, totalG = 0, totalB = 0, coeff = 0;
+
+                                                        for (int subx = left; subx <= right; subx++)
+                                                            for (int suby = up; suby <= down; suby++)
+                                                            {
+                                                                var subCurrent = Vector2.Transform(new Vector2(subx, suby), matrix);
+                                                                var pixel = img.GetPixel(subx, suby);
+                                                                long subcoeff = left + right - (long)Math.Pow(Math.Abs(subx - x) + Math.Abs(suby - y), 1f / 2);
+                                                                subcoeff = (long)(subcoeff * 10 * Math.Pow(Math.Max(maxX, maxY) - Math.Abs(subCurrent.Y) / Math.Max(maxX, maxY), 2));
+                                                                coeff += subcoeff;
+                                                                totalR += subcoeff * pixel.R;
+                                                                totalG += subcoeff * pixel.G;
+                                                                totalB += subcoeff * pixel.B;
+                                                            }
+                                                        copy.SetPixel(x, y, Color.FromArgb(img.GetPixel(x, y).A,
+                                                            (int)(totalR / coeff * intensity + (1 - intensity) * originalPixel.R),
+                                                            (int)(totalG / coeff * intensity + (1 - intensity) * originalPixel.G),
+                                                            (int)(totalB / coeff * intensity + (1 - intensity) * originalPixel.B)));
+                                                        //copy.SetPixel(x, y, FromArgb(original.GetPixel(x, y).A, (int)(intensity * 255), (int)(intensity * 255), (int)(intensity * 255)));
+                                                    }
+                                                }
+
+                                                if (ScaleFactor != 1)
+                                                    copy = Resize(copy, 1 / ScaleFactor);
+                                                using var memory = new MemoryStream();
+                                                copy.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
+                                                memory.Seek(0, SeekOrigin.Begin);
+                                                await arg.Message.RespondWithFileAsync(memory, filename);
+                                            }
+                                            catch (Exception) { }
+                                        }
+                                    }
                                     break;
 
                                 case "deepfried":
@@ -397,62 +472,7 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                         double amplitude = 1;
                                         if (args.Length > 0)
                                             amplitude = Math.Max(0, Math.Min(1, double.Parse(args.First()) / 100));
-                                        var attachments = new List<Tuple<string, string>>();
-                                        foreach (var attachment in arg.Message.Attachments)
-                                            attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
-                                        if (attachments.Count == 0)
-                                        {
-                                            var messages = await arg.Channel.GetMessagesAsync(5, arg.Message.Id);
-                                            foreach (var mess in messages)
-                                            {
-                                                var found = false;
-                                                if (mess.Attachments.Count > 0)
-                                                {
-                                                    foreach (var att in mess.Attachments.Reverse())
-                                                    {
-                                                        var ext = Path.GetExtension(att.FileName);
-                                                        if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
-                                                        {
-                                                            found = true;
-                                                            attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
-                                                            break;
-                                                        }
-                                                    }
-                                                    if (found)
-                                                        break;
-                                                }
-                                                {
-                                                    for (int i = mess.Content.Length - 5; i >= 0; i--)
-                                                    {
-                                                        if (mess.Content.Substring(i, 4) == "http")
-                                                        {
-                                                            var url = "";
-                                                            while (!char.IsWhiteSpace(mess.Content[i]))
-                                                            {
-                                                                url += mess.Content[i];
-                                                                i++;
-                                                                if (i == mess.Content.Length)
-                                                                    break;
-                                                            }
-                                                            //https://stackoverflow.com/a/11083097
-                                                            var req = WebRequest.Create(url);
-                                                            req.Method = "HEAD";
-                                                            using (var resp = req.GetResponse())
-                                                            {
-                                                                if (resp.ContentType.ToLower(CultureInfo.InvariantCulture).StartsWith("image/"))
-                                                                {
-                                                                    found = true;
-                                                                    attachments.Add(new Tuple<string, string>("unknown.png", url));
-                                                                    break;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    if (found)
-                                                        break;
-                                                }
-                                            }
-                                        }
+                                        var attachments = await GetLinkedImages(arg.Message);
                                         foreach (var attachment in attachments)
                                         {
                                             try
@@ -460,6 +480,8 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                                 var filename = Path.GetFileNameWithoutExtension(attachment.Item1) + ".png";
                                                 using var stream = Client.OpenRead(attachment.Item2);
                                                 var img = new Bitmap(stream);
+                                                if (img.Width * img.Height > 500 * 500)
+                                                    img = Resize(img, 500f * 500 / (img.Width * img.Height));
                                                 for (int x = 0; x < img.Size.Width; x++)
                                                 {
                                                     for (int y = 0; y < img.Size.Height; y++)
@@ -529,62 +551,7 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                         long quality = 0;
                                         if (args.Length > 0)
                                             quality = long.Parse(args.First());
-                                        var attachments = new List<Tuple<string, string>>();
-                                        foreach (var attachment in arg.Message.Attachments)
-                                            attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
-                                        if (attachments.Count == 0)
-                                        {
-                                            var messages = await arg.Channel.GetMessagesAsync(5, arg.Message.Id);
-                                            foreach (var mess in messages)
-                                            {
-                                                var found = false;
-                                                if (mess.Attachments.Count > 0)
-                                                {
-                                                    foreach (var att in mess.Attachments.Reverse())
-                                                    {
-                                                        var ext = Path.GetExtension(att.FileName);
-                                                        if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
-                                                        {
-                                                            found = true;
-                                                            attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
-                                                            break;
-                                                        }
-                                                    }
-                                                    if (found)
-                                                        break;
-                                                }
-                                                {
-                                                    for (int i = mess.Content.Length - 5; i >= 0; i--)
-                                                    {
-                                                        if (mess.Content.Substring(i, 4) == "http")
-                                                        {
-                                                            var url = "";
-                                                            while (!char.IsWhiteSpace(mess.Content[i]))
-                                                            {
-                                                                url += mess.Content[i];
-                                                                i++;
-                                                                if (i == mess.Content.Length)
-                                                                    break;
-                                                            }
-                                                            //https://stackoverflow.com/a/11083097
-                                                            var req = WebRequest.Create(url);
-                                                            req.Method = "HEAD";
-                                                            using (var resp = req.GetResponse())
-                                                            {
-                                                                if (resp.ContentType.ToLower(CultureInfo.InvariantCulture).StartsWith("image/"))
-                                                                {
-                                                                    found = true;
-                                                                    attachments.Add(new Tuple<string, string>("unknown.png", url));
-                                                                    break;
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                    if (found)
-                                                        break;
-                                                }
-                                            }
-                                        }
+                                        var attachments = await GetLinkedImages(arg.Message);
                                         foreach (var attachment in attachments)
                                         {
                                             var filename = Path.GetFileNameWithoutExtension(attachment.Item1) + ".jpg";
@@ -592,6 +559,8 @@ deepfried [<amplitude>]                           transforms an image into a dee
                                             {
                                                 using var stream = Client.OpenRead(attachment.Item2);
                                                 var img = new Bitmap(stream);
+                                                if (img.Width * img.Height > 500 * 500)
+                                                    img = Resize(img, 500f * 500 / (img.Width * img.Height));
                                                 var jpgEncoder = ImageCodecInfo.GetImageDecoders().First(dec => dec.FormatID == System.Drawing.Imaging.ImageFormat.Jpeg.Guid);
                                                 var parameters = new EncoderParameters(1);
                                                 parameters.Param[0] = new EncoderParameter(System.Drawing.Imaging.Encoder.Quality, quality);

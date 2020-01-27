@@ -12,11 +12,106 @@ using Newtonsoft.Json;
 using Ical.Net;
 using Ical.Net.CalendarComponents;
 using IcalToImage;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
 
 namespace InfoBot
 {
     internal partial class Program
     {
+        private async static Task<List<Tuple<string, string>>> GetLinkedImages(DiscordMessage message)
+        {
+            var attachments = new List<Tuple<string, string>>();
+            foreach (var attachment in message.Attachments)
+                attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
+            if (attachments.Count == 0)
+            {
+                var messages = await message.Channel.GetMessagesAsync(5, message.Id);
+                foreach (var mess in messages)
+                {
+                    var found = false;
+                    if (mess.Attachments.Count > 0)
+                    {
+                        foreach (var att in mess.Attachments.Reverse())
+                        {
+                            var ext = Path.GetExtension(att.FileName);
+                            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
+                            {
+                                found = true;
+                                attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
+                                break;
+                            }
+                        }
+                        if (found)
+                            break;
+                    }
+                    {
+                        for (int i = mess.Content.Length - 5; i >= 0; i--)
+                        {
+                            if (mess.Content.Substring(i, 4) == "http")
+                            {
+                                var url = "";
+                                while (!char.IsWhiteSpace(mess.Content[i]))
+                                {
+                                    url += mess.Content[i];
+                                    i++;
+                                    if (i == mess.Content.Length)
+                                        break;
+                                }
+                                //https://stackoverflow.com/a/11083097
+                                var req = WebRequest.Create(url);
+                                req.Method = "HEAD";
+                                using (var resp = req.GetResponse())
+                                {
+                                    if (resp.ContentType.ToLower(System.Globalization.CultureInfo.InvariantCulture).StartsWith("image/"))
+                                    {
+                                        found = true;
+                                        attachments.Add(new Tuple<string, string>("unknown.png", url));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (found)
+                            break;
+                    }
+                }
+            }
+            return attachments;
+        }
+
+        private static Bitmap Resize(Bitmap img, float scale)
+        {
+            var width = (int)(scale * img.Width);
+            var height = (int)(scale * img.Height);
+
+            #region https://stackoverflow.com/a/24199315
+
+            var destRect = new Rectangle(0, 0, width, height);
+            var destImage = new Bitmap(width, height);
+
+            destImage.SetResolution(img.HorizontalResolution, img.VerticalResolution);
+
+            using (var graphics = Graphics.FromImage(destImage))
+            {
+                graphics.CompositingMode = CompositingMode.SourceCopy;
+                graphics.CompositingQuality = CompositingQuality.HighQuality;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.SmoothingMode = SmoothingMode.HighQuality;
+                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                using (var wrapMode = new ImageAttributes())
+                {
+                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
+                    graphics.DrawImage(img, destRect, 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, wrapMode);
+                }
+            }
+            return destImage;
+
+            #endregion https://stackoverflow.com/a/24199315
+        }
+
         #region Private Fields
 
         /// <summary>
