@@ -365,9 +365,9 @@ blur                                              blurs an image (or the image a
                                                 if (img.Width * img.Height > 500 * 500)
                                                     img = Resize(img, 500f * 500 / (img.Width * img.Height));
                                                 float ScaleFactor = 1;
-                                                if (img.Width * img.Height > 350 * 350)
+                                                if (img.Width * img.Height > 250 * 250)
                                                 {
-                                                    ScaleFactor = 350f * 350 / (img.Width * img.Height);
+                                                    ScaleFactor = 250f * 250 / (img.Width * img.Height);
 
                                                     img = Resize(img, ScaleFactor);
                                                 }
@@ -413,6 +413,8 @@ blur                                              blurs an image (or the image a
 
                                                 if (ScaleFactor != 1)
                                                     copy = Resize(copy, 1 / ScaleFactor);
+                                                if (img.Width * img.Height > 450 * 450)
+                                                    copy = Resize(copy, 450f * 450 / (img.Width * img.Height));
                                                 using var memory = new MemoryStream();
                                                 copy.Save(memory, System.Drawing.Imaging.ImageFormat.Png);
                                                 memory.Seek(0, SeekOrigin.Begin);

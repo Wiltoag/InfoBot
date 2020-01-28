@@ -847,8 +847,8 @@ namespace InfoBot
         {
             try
             {
-                if (!func().Wait(TimeSpan.FromSeconds(30)))
-                    throw new Exception("30 sec timeout passed, command canceled");
+                if (!func().Wait(TimeSpan.FromSeconds(60)))
+                    throw new Exception("60 sec timeout passed, command canceled");
             }
             catch (Exception e)
             {
