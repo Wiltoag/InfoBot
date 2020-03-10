@@ -302,7 +302,7 @@ namespace InfoBot
             CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=e81e5e310001831"; //1.1
             CalendarUrl[1] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //1.2
             CalendarUrl[2] = ""; //2.1
-            CalendarUrl[3] = ""; //2.2
+            CalendarUrl[3] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=c225e7124501854"; //2.2
             CalendarUrl[4] = ""; //3.1
             CalendarUrl[5] = ""; //3.2
             CalendarUrl[6] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=25e452e58201781"; //4.1
