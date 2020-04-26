@@ -15,6 +15,7 @@
     <PackageReference Include="Figgle" Version="0.3.0" />
     <PackageReference Include="Ical.Net" Version="4.1.11" />
     <PackageReference Include="IcalToImage" Version="0.1.0" />
+    <PackageReference Include="SFML.Net" Version="2.5.0" />
     <PackageReference Include="System.Drawing.Common" Version="4.7.0" />
     <PackageReference Include="System.Reflection.TypeExtensions" Version="4.3.0" />
   </ItemGroup>
@@ -26,10 +27,16 @@
     <None Update="dejavu.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="padoru.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="revenge.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <None Update="sardoche.gif">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="trebuchet.ttf">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>

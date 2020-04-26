@@ -171,6 +171,11 @@ namespace InfoBot
         private static DateTime LastEdtCheck;
 
         /// <summary>
+        /// The last time the great padoru has been summoned
+        /// </summary>
+        private static DateTime LastPadoruSummoning;
+
+        /// <summary>
         /// The next time the bot will restart its client to stay connected in some cases
         /// </summary>
         private static DateTime NextRestart;
@@ -204,6 +209,11 @@ namespace InfoBot
         /// The channels of the 2 shi fu mi players
         /// </summary>
         private static DiscordChannel[] ShiFuMiChannel;
+
+        /// <summary>
+        /// Channel for the shitpost
+        /// </summary>
+        private static DiscordChannel ShitpostChannel;
 
         /// <summary>
         /// Channel for the nsfw tags
@@ -344,32 +354,35 @@ namespace InfoBot
             LoadData();
             EdtChannel = new DiscordChannel[8];
             ShiFuMiChannel = new DiscordChannel[2];
-            ExecuteAsyncMethod(async () =>
-            {
-                //all the specific chan/roles sorted by their group
-                EdtChannel[0] = await Discord.GetChannelAsync(623557669810077697);
-                EdtChannel[1] = await Discord.GetChannelAsync(623557699497623602);
-                EdtChannel[2] = await Discord.GetChannelAsync(623557716694138890);
-                EdtChannel[3] = await Discord.GetChannelAsync(623557732930289664);
-                EdtChannel[4] = await Discord.GetChannelAsync(623557762101542923);
-                EdtChannel[5] = await Discord.GetChannelAsync(623557780527382530);
-                EdtChannel[6] = await Discord.GetChannelAsync(623557795660431390);
-                EdtChannel[7] = await Discord.GetChannelAsync(623557977223200798);
+            LastPadoruSummoning = DateTime.MinValue;
+            if (!DEBUG)
+                ExecuteAsyncMethod(async () =>
+                {
+                    //all the specific chan/roles sorted by their group
+                    EdtChannel[0] = await Discord.GetChannelAsync(623557669810077697);
+                    EdtChannel[1] = await Discord.GetChannelAsync(623557699497623602);
+                    EdtChannel[2] = await Discord.GetChannelAsync(623557716694138890);
+                    EdtChannel[3] = await Discord.GetChannelAsync(623557732930289664);
+                    EdtChannel[4] = await Discord.GetChannelAsync(623557762101542923);
+                    EdtChannel[5] = await Discord.GetChannelAsync(623557780527382530);
+                    EdtChannel[6] = await Discord.GetChannelAsync(623557795660431390);
+                    EdtChannel[7] = await Discord.GetChannelAsync(623557977223200798);
 
-                ShiFuMiChannel[0] = await Discord.GetChannelAsync(632490916342530058);
-                ShiFuMiChannel[1] = await Discord.GetChannelAsync(632490998488104970);
+                    ShiFuMiChannel[0] = await Discord.GetChannelAsync(632490916342530058);
+                    ShiFuMiChannel[1] = await Discord.GetChannelAsync(632490998488104970);
 
-                TPRoles[0] = DUTInfoServer.GetRole(619949947042791472);
-                TPRoles[1] = DUTInfoServer.GetRole(619949993096118292);
-                TPRoles[2] = DUTInfoServer.GetRole(619950016630358086);
-                TPRoles[3] = DUTInfoServer.GetRole(619950035895058432);
-                TPRoles[4] = DUTInfoServer.GetRole(619950048519913492);
-                TPRoles[5] = DUTInfoServer.GetRole(619950099807862794);
-                TPRoles[6] = DUTInfoServer.GetRole(619950111300255774);
-                TPRoles[7] = DUTInfoServer.GetRole(619950125573472262);
+                    TPRoles[0] = DUTInfoServer.GetRole(619949947042791472);
+                    TPRoles[1] = DUTInfoServer.GetRole(619949993096118292);
+                    TPRoles[2] = DUTInfoServer.GetRole(619950016630358086);
+                    TPRoles[3] = DUTInfoServer.GetRole(619950035895058432);
+                    TPRoles[4] = DUTInfoServer.GetRole(619950048519913492);
+                    TPRoles[5] = DUTInfoServer.GetRole(619950099807862794);
+                    TPRoles[6] = DUTInfoServer.GetRole(619950111300255774);
+                    TPRoles[7] = DUTInfoServer.GetRole(619950125573472262);
 
-                TagsChannel = await Discord.GetChannelAsync(646474262021931026);
-            });
+                    TagsChannel = await Discord.GetChannelAsync(646474262021931026);
+                    ShitpostChannel = await Discord.GetChannelAsync(622018133758050304);
+                });
 
             if (DEBUG)
                 ExecuteAsyncMethod(async () =>
@@ -397,6 +410,7 @@ namespace InfoBot
                     TPRoles[7] = TPRoles[0];
 
                     TagsChannel = EdtChannel[0];
+                    ShitpostChannel = EdtChannel[0];
                 });
             async Task createdMess1(DSharpPlus.EventArgs.MessageCreateEventArgs arg)
             {
@@ -492,7 +506,7 @@ namespace InfoBot
                                 DejavuCurrLine = 2;
                                 await arg.Message.RespondAsync(dejavuLines[1]);
                             }
-                            if (!arg.Author.IsBot)
+                            if (!arg.Author.IsBot && !arg.Channel.IsPrivate)
                             {
                                 for (int i = 0; i < content.Length - 5; i++)
                                 {
@@ -507,6 +521,11 @@ namespace InfoBot
                                             correctPattern = false;
                                     if (correctPattern)
                                     {
+                                        if (strNumber == "177013")
+                                        {
+                                            await arg.Message.RespondAsync("1̶̽͝7̴̆̋7̷͆͠0̶̓̎1̴̐̿3̵̏̓ est interdit");
+                                            continue;
+                                        }
                                         var address = "https://nhentai.net/g/" + strNumber;
                                         var html = Client.DownloadString(address);
                                         string title = "";
@@ -520,7 +539,10 @@ namespace InfoBot
                                             title.Trim(' ', '\t', '\n', '\r');
                                         }
                                         if (title.Contains("404"))
+                                        {
+                                            Console.WriteLine("404 tag");
                                             continue;
+                                        }
                                         var sb = new StringBuilder();
                                         sb.Append("Tag :__");
                                         sb.Append(strNumber);
@@ -620,6 +642,17 @@ namespace InfoBot
                                                 index++;
                                             await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + "s, pas " + new string(content.ToArray()[index..(i + 4)]));
                                         }
+                                    }
+                                }
+                                {
+                                    if (GetSimplifiedString(content).Contains("padoru") && DateTime.Now > LastPadoruSummoning)
+                                    {
+                                        LastPadoruSummoning = DateTime.Now;
+                                        DateTime xmas = new DateTime(DateTime.Now.Year, 12, 25);
+                                        if (xmas < DateTime.Now)
+                                            xmas = xmas.AddYears(1);
+                                        using var padoru = new Padoru((xmas - DateTime.Today).Days);
+                                        await arg.Message.RespondWithFileAsync(padoru.Output, "padoru is waiting.jpg");
                                     }
                                 }
                             }
