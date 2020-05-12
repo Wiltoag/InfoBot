@@ -661,7 +661,7 @@ namespace InfoBot
                                         await arg.Message.RespondWithFileAsync(padoru.Output, "padoru is waiting.jpg");
                                     }
                                     string simplifed = GetSimplifiedString(content);
-                                    if (simplifed.Contains("partage"))
+                                    if (simplifed.Contains("partage") || simplifed.Contains("share") || simplifed.Contains("sharing"))
                                         await arg.Message.CreateReactionAsync(Sharing);
                                 }
                             }
