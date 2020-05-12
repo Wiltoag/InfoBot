@@ -206,6 +206,11 @@ namespace InfoBot
         private static List<SavedVote> SavedVotes;
 
         /// <summary>
+        /// The sharing emoji
+        /// </summary>
+        private static DiscordEmoji Sharing;
+
+        /// <summary>
         /// The channels of the 2 shi fu mi players
         /// </summary>
         private static DiscordChannel[] ShiFuMiChannel;
@@ -354,6 +359,7 @@ namespace InfoBot
             LoadData();
             EdtChannel = new DiscordChannel[8];
             ShiFuMiChannel = new DiscordChannel[2];
+            Sharing = DUTInfoServer.Emojis.First((e) => e.Name == "partage");
             LastPadoruSummoning = DateTime.MinValue;
             if (!DEBUG)
                 ExecuteAsyncMethod(async () =>
@@ -654,6 +660,9 @@ namespace InfoBot
                                         using var padoru = new Padoru((xmas - DateTime.Today).Days);
                                         await arg.Message.RespondWithFileAsync(padoru.Output, "padoru is waiting.jpg");
                                     }
+                                    string simplifed = GetSimplifiedString(content);
+                                    if (simplifed.Contains("partage"))
+                                        await arg.Message.CreateReactionAsync(Sharing);
                                 }
                             }
                         }
