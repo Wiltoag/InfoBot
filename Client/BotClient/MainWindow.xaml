@@ -7,5 +7,34 @@
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="70" />
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <ScrollViewer>
+            <StackPanel x:Name="serverPanel" />
+        </ScrollViewer>
+        <ScrollViewer Grid.Column="1">
+            <StackPanel x:Name="channelPanel" />
+        </ScrollViewer>
+        <Grid Grid.Column="2" Margin="5,0,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*" />
+                <RowDefinition Height="75" />
+            </Grid.RowDefinitions>
+            <ScrollViewer x:Name="messageScroller">
+                <StackPanel x:Name="messagePanel" />
+            </ScrollViewer>
+            <Grid Grid.Row="1" Margin="5,0">
+                <Button HorizontalAlignment="Left" VerticalAlignment="Center"  Width="32" Height="32">
+                    <Image Source="/AddFile_16x.png" Stretch="None" />
+                </Button>
+                <TextBox x:Name="inputField" Margin="40,5,50,5" VerticalAlignment="Center" Padding="5" AcceptsReturn="True" />
+                <Button HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10,0" Width="32" Height="32" Click="Button_Click">
+                    <Image Stretch="None" Source="/SendEmail_16x.png" />
+                </Button>
+            </Grid>
+        </Grid>
     </Grid>
 </Window>

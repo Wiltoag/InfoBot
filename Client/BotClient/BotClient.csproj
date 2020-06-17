@@ -1,9 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
 
   <PropertyGroup>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWPF>true</UseWPF>
+    <ApplicationIcon />
+    <StartupObject />
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -15,7 +17,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="AddFile_16x.png" />
+    <None Remove="SendEmail_16x.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="DSharpPlus" Version="3.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="AddFile_16x.png" />
+    <Resource Include="SendEmail_16x.png" />
   </ItemGroup>
 
 </Project>
