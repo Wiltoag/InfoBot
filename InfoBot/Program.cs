@@ -314,13 +314,13 @@ namespace InfoBot
             //now we initiate the ical
             CalendarUrl = new string[8];
             TPRoles = new DiscordRole[8];
-            CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=e81e5e310001831"; //1.1
-            CalendarUrl[1] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //1.2
+            CalendarUrl[0] = ""; //1.1
+            CalendarUrl[1] = ""; //1.2
             CalendarUrl[2] = ""; //2.1
-            CalendarUrl[3] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=c225e7124501854"; //2.2
+            CalendarUrl[3] = ""; //2.2
             CalendarUrl[4] = ""; //3.1
             CalendarUrl[5] = ""; //3.2
-            CalendarUrl[6] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=25e452e58201781"; //4.1
+            CalendarUrl[6] = ""; //4.1
             CalendarUrl[7] = ""; //4.2
             Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
@@ -816,6 +816,7 @@ namespace InfoBot
                     {
                         case "help":
                             Console.WriteLine("quit : close the bot.");
+                            Console.WriteLine("calendar : force update the calendars.");
                             Console.WriteLine("reconnect : reconnect the bot.");
                             Console.WriteLine("help : display this info.");
                             Console.WriteLine("disp <channel> <message> : send a message to a channel.");
@@ -823,6 +824,12 @@ namespace InfoBot
 
                         case "quit":
                             Environment.Exit(0);
+                            break;
+
+                        case "calendar":
+                            for (int i = 0; i < OldICalHash.Length; i++)
+                                OldICalHash[i] = 0;
+                            ExecuteAsyncMethod(async () => UpdateCalendars());
                             break;
 
                         case "disp":
