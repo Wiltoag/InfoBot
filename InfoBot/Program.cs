@@ -15,103 +15,12 @@ using IcalToImage;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using Microsoft.VisualBasic;
 
 namespace InfoBot
 {
     internal partial class Program
     {
-        private async static Task<List<Tuple<string, string>>> GetLinkedImages(DiscordMessage message)
-        {
-            var attachments = new List<Tuple<string, string>>();
-            foreach (var attachment in message.Attachments)
-                attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
-            if (attachments.Count == 0)
-            {
-                var messages = await message.Channel.GetMessagesAsync(5, message.Id);
-                foreach (var mess in messages)
-                {
-                    var found = false;
-                    if (mess.Attachments.Count > 0)
-                    {
-                        foreach (var att in mess.Attachments.Reverse())
-                        {
-                            var ext = Path.GetExtension(att.FileName);
-                            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
-                            {
-                                found = true;
-                                attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
-                                break;
-                            }
-                        }
-                        if (found)
-                            break;
-                    }
-                    {
-                        for (int i = mess.Content.Length - 5; i >= 0; i--)
-                        {
-                            if (mess.Content.Substring(i, 4) == "http")
-                            {
-                                var url = "";
-                                while (!char.IsWhiteSpace(mess.Content[i]))
-                                {
-                                    url += mess.Content[i];
-                                    i++;
-                                    if (i == mess.Content.Length)
-                                        break;
-                                }
-                                //https://stackoverflow.com/a/11083097
-                                var req = WebRequest.Create(url);
-                                req.Method = "HEAD";
-                                using (var resp = req.GetResponse())
-                                {
-                                    if (resp.ContentType.ToLower(System.Globalization.CultureInfo.InvariantCulture).StartsWith("image/"))
-                                    {
-                                        found = true;
-                                        attachments.Add(new Tuple<string, string>("unknown.png", url));
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (found)
-                            break;
-                    }
-                }
-            }
-            return attachments;
-        }
-
-        private static Bitmap Resize(Bitmap img, float scale)
-        {
-            var width = (int)(scale * img.Width);
-            var height = (int)(scale * img.Height);
-
-            #region https://stackoverflow.com/a/24199315
-
-            var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height);
-
-            destImage.SetResolution(img.HorizontalResolution, img.VerticalResolution);
-
-            using (var graphics = Graphics.FromImage(destImage))
-            {
-                graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.CompositingQuality = CompositingQuality.HighQuality;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                using (var wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(img, destRect, 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-            }
-            return destImage;
-
-            #endregion https://stackoverflow.com/a/24199315
-        }
-
         #region Private Fields
 
         /// <summary>
@@ -174,6 +83,11 @@ namespace InfoBot
         /// The last time the great padoru has been summoned
         /// </summary>
         private static DateTime LastPadoruSummoning;
+
+        /// <summary>
+        /// The bot is muted til this date
+        /// </summary>
+        private static DateTime Muted;
 
         /// <summary>
         /// The next time the bot will restart its client to stay connected in some cases
@@ -265,6 +179,7 @@ namespace InfoBot
         /// <returns>void</returns>
         private static async Task AsyncMain(string[] args)
         {
+            Muted = DateTime.MinValue;
             //we initiate the differents lyrics
             RevengeCurrLine = 0;
             DejavuCurrLine = 0;
@@ -426,24 +341,27 @@ namespace InfoBot
                     //native exception handling, preventing crashes
                     ExecuteAsyncMethod(async () =>
                     {
-                        //for messages containing "c'était sûr" to respond with our lord and savior Sardoche
-                        var content = arg.Message.Content;
-                        content = content.ToLower();
-                        var newStr = "";
-                        foreach (var c in content)
+                        if (DateTime.Now > Muted)
                         {
-                            if (c != ' ' && c != '\'')
+                            //for messages containing "c'était sûr" to respond with our lord and savior Sardoche
+                            var content = arg.Message.Content;
+                            content = content.ToLower();
+                            var newStr = "";
+                            foreach (var c in content)
                             {
-                                if (c == 'é')
-                                    newStr += 'e';
-                                else if (c == 'û')
-                                    newStr += 'u';
-                                else
-                                    newStr += c;
+                                if (c != ' ' && c != '\'')
+                                {
+                                    if (c == 'é')
+                                        newStr += 'e';
+                                    else if (c == 'û')
+                                        newStr += 'u';
+                                    else
+                                        newStr += c;
+                                }
                             }
+                            if (newStr.Contains("cetaitsur"))
+                                await arg.Message.RespondAsync("https://cdn.discordapp.com/attachments/619513575295418392/625709998692892682/sardoche.gif");
                         }
-                        if (newStr.Contains("cetaitsur"))
-                            await arg.Message.RespondAsync("https://cdn.discordapp.com/attachments/619513575295418392/625709998692892682/sardoche.gif");
                     });
                 });
             };
@@ -455,219 +373,236 @@ namespace InfoBot
                 {
                     ExecuteAsyncMethod(async () =>
                     {
-                        var content = arg.Message.Content;
-                        try
+                        if (DateTime.Now > Muted)
                         {
-                            //handling revenge lyrics
-                            if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .8 && !arg.Author.IsBot)
+                            var content = arg.Message.Content;
+                            try
                             {
-                                //if a similarity has been detected and it's not comming from a bot
-                                RevengeCurrLine += 2;
-                                //we test if we are at the end of the song
-                                if (RevengeCurrLine - 1 < revengeLines.Length)
-                                    await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
-                                else
-                                    RevengeCurrLine = 0;
-                            }
-                            else if (GetSimplifiedString(content).Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
-                            {
-                                //if we start over again (first line of the lyrics)
-                                RevengeCurrLine = 2;
-                                await arg.Message.RespondAsync(revengeLines[1]);
-                            }
-                            //handling all star lyrics
-                            if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .8 && !arg.Author.IsBot)
-                            {
-                                //if a similarity has been detected and it's not comming from a bot
-                                AllstarCurrLine += 2;
-                                //we test if we are at the end of the song
-                                if (AllstarCurrLine - 1 < allstarLines.Length)
-                                    await arg.Message.RespondAsync(allstarLines[AllstarCurrLine - 1]);
-                                else
-                                    AllstarCurrLine = 0;
-                            }
-                            else if (GetSimplifiedString(content).Contains(GetSimplifiedString(allstarLines[0])) && !arg.Author.IsBot)
-                            {
-                                //if we start over again (first line of the lyrics)
-                                AllstarCurrLine = 2;
-                                await arg.Message.RespondAsync(allstarLines[1]);
-                            }
-                            //same as above, but for deja vu
-                            if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .8 && !arg.Author.IsBot)
-                            {
-                                DejavuCurrLine += 2;
-                                if (DejavuCurrLine - 1 < dejavuLines.Length)
-                                    await arg.Message.RespondAsync(dejavuLines[DejavuCurrLine - 1]);
-                                else
-                                    DejavuCurrLine = 0;
-                            }
-                            else if (GetSimplifiedString(content).Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
-                            {
-                                //special starting point, where it it "deja vu !"
-                                DejavuCurrLine = 10;
-                                await arg.Message.RespondAsync(dejavuLines[9]);
-                            }
-                            else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .8 && !arg.Author.IsBot)
-                            {
-                                DejavuCurrLine = 2;
-                                await arg.Message.RespondAsync(dejavuLines[1]);
-                            }
-                            if (!arg.Author.IsBot && !arg.Channel.IsPrivate)
-                            {
-                                for (int i = 0; i < content.Length - 5; i++)
+                                //handling revenge lyrics
+                                if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .8 && !arg.Author.IsBot)
                                 {
-                                    string strNumber = content.Substring(i, 6);
-                                    bool correctPattern = true;
-                                    if (i > 0 && !char.IsWhiteSpace(content[i - 1]))
-                                        correctPattern = false;
-                                    if (i < content.Length - 6 && !char.IsWhiteSpace(content[i + 6]))
-                                        correctPattern = false;
-                                    foreach (var item in strNumber)
-                                        if (!char.IsDigit(item))
-                                            correctPattern = false;
-                                    if (correctPattern)
-                                    {
-                                        if (strNumber == "177013")
-                                        {
-                                            await arg.Message.RespondAsync("1̶̽͝7̴̆̋7̷͆͠0̶̓̎1̴̐̿3̵̏̓ est interdit");
-                                            continue;
-                                        }
-                                        var address = "https://nhentai.net/g/" + strNumber;
-                                        var html = Client.DownloadString(address);
-                                        string title = "";
-                                        {
-                                            var begin = -1;
-                                            for (int j = 0; j < html.Length - 4; j++)
-                                                if (html.Substring(j, 4) == "<h1>")
-                                                    begin = j + 4;
-                                            for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
-                                                title += html[j];
-                                            title.Trim(' ', '\t', '\n', '\r');
-                                        }
-                                        if (title.Contains("404"))
-                                        {
-                                            Console.WriteLine("404 tag");
-                                            continue;
-                                        }
-                                        var sb = new StringBuilder();
-                                        sb.Append("Tag :__");
-                                        sb.Append(strNumber);
-                                        sb.Append("__ posted by **");
-                                        sb.Append(arg.Author.Username);
-                                        sb.Append("** __");
-                                        sb.Append(title);
-                                        sb.Append("__\nAvailable here : ");
-                                        sb.Append(address);
-                                        await TagsChannel.SendMessageAsync(sb.ToString());
-                                    }
+                                    //if a similarity has been detected and it's not comming from a bot
+                                    RevengeCurrLine += 2;
+                                    //we test if we are at the end of the song
+                                    if (RevengeCurrLine - 1 < revengeLines.Length)
+                                        await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
+                                    else
+                                        RevengeCurrLine = 0;
                                 }
-                                for (int i = 0; i < content.Length - 4; i++)
+                                else if (GetSimplifiedString(content).Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
                                 {
-                                    string strNumber = content.Substring(i, 5);
-                                    bool correctPattern = true;
-                                    if (i > 0 && !char.IsWhiteSpace(content[i - 1]))
-                                        correctPattern = false;
-                                    if (i < content.Length - 5 && !char.IsWhiteSpace(content[i + 5]))
-                                        correctPattern = false;
-                                    foreach (var item in strNumber)
-                                        if (!char.IsDigit(item))
-                                            correctPattern = false;
-                                    if (correctPattern)
-                                    {
-                                        var address = "https://nhentai.net/g/" + strNumber;
-                                        var html = Client.DownloadString(address);
-                                        string title = "";
-                                        {
-                                            var begin = -1;
-                                            for (int j = 0; j < html.Length - 4; j++)
-                                                if (html.Substring(j, 4) == "<h1>")
-                                                    begin = j + 4;
-                                            for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
-                                                title += html[j];
-                                            title.Trim(' ', '\t', '\n', '\r');
-                                        }
-                                        if (title.Contains("404"))
-                                            continue;
-                                        var sb = new StringBuilder();
-                                        sb.Append("Tag :__");
-                                        sb.Append(strNumber);
-                                        sb.Append("__ posted by **");
-                                        sb.Append(arg.Author.Username);
-                                        sb.Append("** __");
-                                        sb.Append(title);
-                                        sb.Append("__\nAvailable here : ");
-                                        sb.Append(address);
-                                        await TagsChannel.SendMessageAsync(sb.ToString());
-                                    }
+                                    //if we start over again (first line of the lyrics)
+                                    RevengeCurrLine = 2;
+                                    await arg.Message.RespondAsync(revengeLines[1]);
                                 }
+                                //handling all star lyrics
+                                if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .8 && !arg.Author.IsBot)
                                 {
-                                    var vowels = "aeiouy";
-                                    var lower = content.ToLower();
-                                    if (new string(lower.ToArray()[^3..^0]) == "ine" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^4]))
-                                    {
-                                        int index = lower.Length - 1;
-                                        while (index != 0 && char.IsLetter(lower[index]))
-                                            index--;
-                                        if (char.IsWhiteSpace(lower[index]))
-                                            index++;
-                                        await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..^3]) + ", pas " + new string(content.ToArray()[index..^0]));
-                                    }
-                                    for (int i = 0; i < lower.Length - 4; i++)
-                                    {
-                                        if (new string(lower.ToArray()[i..(i + 4)]) == "ine " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
-                                        {
-                                            int index = i + 1;
-                                            while (index != 0 && char.IsLetter(lower[index]))
-                                                index--;
-                                            if (char.IsWhiteSpace(lower[index]))
-                                                index++;
-                                            await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 3)]));
-                                        }
-                                    }
+                                    //if a similarity has been detected and it's not comming from a bot
+                                    AllstarCurrLine += 2;
+                                    //we test if we are at the end of the song
+                                    if (AllstarCurrLine - 1 < allstarLines.Length)
+                                        await arg.Message.RespondAsync(allstarLines[AllstarCurrLine - 1]);
+                                    else
+                                        AllstarCurrLine = 0;
                                 }
+                                else if (GetSimplifiedString(content).Contains(GetSimplifiedString(allstarLines[0])) && !arg.Author.IsBot)
                                 {
-                                    var vowels = "aeiouy";
-                                    var lower = content.ToLower();
-                                    if (new string(lower.ToArray()[^4..^0]) == "ines" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^5]))
-                                    {
-                                        int index = lower.Length - 1;
-                                        while (index != 0 && char.IsLetter(lower[index]))
-                                            index--;
-                                        if (char.IsWhiteSpace(lower[index]))
-                                            index++;
-                                        await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..^4]) + "s, pas " + new string(content.ToArray()[index..^0]));
-                                    }
+                                    //if we start over again (first line of the lyrics)
+                                    AllstarCurrLine = 2;
+                                    await arg.Message.RespondAsync(allstarLines[1]);
+                                }
+                                //same as above, but for deja vu
+                                if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .8 && !arg.Author.IsBot)
+                                {
+                                    DejavuCurrLine += 2;
+                                    if (DejavuCurrLine - 1 < dejavuLines.Length)
+                                        await arg.Message.RespondAsync(dejavuLines[DejavuCurrLine - 1]);
+                                    else
+                                        DejavuCurrLine = 0;
+                                }
+                                else if (GetSimplifiedString(content).Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
+                                {
+                                    //special starting point, where it it "deja vu !"
+                                    DejavuCurrLine = 10;
+                                    await arg.Message.RespondAsync(dejavuLines[9]);
+                                }
+                                else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .8 && !arg.Author.IsBot)
+                                {
+                                    DejavuCurrLine = 2;
+                                    await arg.Message.RespondAsync(dejavuLines[1]);
+                                }
+                                if (!arg.Author.IsBot && !arg.Channel.IsPrivate)
+                                {
                                     for (int i = 0; i < content.Length - 5; i++)
                                     {
-                                        if (new string(lower.ToArray()[i..(i + 5)]) == "ines " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
+                                        string strNumber = content.Substring(i, 6);
+                                        bool correctPattern = true;
+                                        if (i > 0 && !char.IsWhiteSpace(content[i - 1]))
+                                            correctPattern = false;
+                                        if (i < content.Length - 6 && !char.IsWhiteSpace(content[i + 6]))
+                                            correctPattern = false;
+                                        foreach (var item in strNumber)
+                                            if (!char.IsDigit(item))
+                                                correctPattern = false;
+                                        if (correctPattern)
                                         {
-                                            int index = i + 1;
+                                            if (strNumber == "177013")
+                                            {
+                                                await arg.Message.RespondAsync("1̶̽͝7̴̆̋7̷͆͠0̶̓̎1̴̐̿3̵̏̓ est interdit");
+                                                continue;
+                                            }
+                                            var address = "https://nhentai.net/g/" + strNumber;
+                                            var html = Client.DownloadString(address);
+                                            string title = "";
+                                            {
+                                                var begin = -1;
+                                                for (int j = 0; j < html.Length - 4; j++)
+                                                    if (html.Substring(j, 4) == "<h1>")
+                                                        begin = j + 4;
+                                                for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                                    title += html[j];
+                                                title.Trim(' ', '\t', '\n', '\r');
+                                            }
+                                            if (title.Contains("404"))
+                                            {
+                                                Console.WriteLine("404 tag");
+                                                continue;
+                                            }
+                                            var sb = new StringBuilder();
+                                            sb.Append("Tag :__");
+                                            sb.Append(strNumber);
+                                            sb.Append("__ posted by **");
+                                            sb.Append(arg.Author.Username);
+                                            sb.Append("** __");
+                                            sb.Append(title);
+                                            sb.Append("__\nAvailable here : ");
+                                            sb.Append(address);
+                                            await TagsChannel.SendMessageAsync(sb.ToString());
+                                        }
+                                    }
+                                    for (int i = 0; i < content.Length - 4; i++)
+                                    {
+                                        string strNumber = content.Substring(i, 5);
+                                        bool correctPattern = true;
+                                        if (i > 0 && !char.IsWhiteSpace(content[i - 1]))
+                                            correctPattern = false;
+                                        if (i < content.Length - 5 && !char.IsWhiteSpace(content[i + 5]))
+                                            correctPattern = false;
+                                        foreach (var item in strNumber)
+                                            if (!char.IsDigit(item))
+                                                correctPattern = false;
+                                        if (correctPattern)
+                                        {
+                                            var address = "https://nhentai.net/g/" + strNumber;
+                                            var html = Client.DownloadString(address);
+                                            string title = "";
+                                            {
+                                                var begin = -1;
+                                                for (int j = 0; j < html.Length - 4; j++)
+                                                    if (html.Substring(j, 4) == "<h1>")
+                                                        begin = j + 4;
+                                                for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                                    title += html[j];
+                                                title.Trim(' ', '\t', '\n', '\r');
+                                            }
+                                            if (title.Contains("404"))
+                                                continue;
+                                            var sb = new StringBuilder();
+                                            sb.Append("Tag :__");
+                                            sb.Append(strNumber);
+                                            sb.Append("__ posted by **");
+                                            sb.Append(arg.Author.Username);
+                                            sb.Append("** __");
+                                            sb.Append(title);
+                                            sb.Append("__\nAvailable here : ");
+                                            sb.Append(address);
+                                            await TagsChannel.SendMessageAsync(sb.ToString());
+                                        }
+                                    }
+                                    {
+                                        var vowels = "aeiouy";
+                                        var lower = content.ToLower();
+                                        if (new string(lower.ToArray()[^3..^0]) == "ine" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^4]))
+                                        {
+                                            int index = lower.Length - 1;
                                             while (index != 0 && char.IsLetter(lower[index]))
                                                 index--;
                                             if (char.IsWhiteSpace(lower[index]))
                                                 index++;
-                                            await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + "s, pas " + new string(content.ToArray()[index..(i + 4)]));
+                                            await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..^3]) + ", pas " + new string(content.ToArray()[index..^0]));
+                                        }
+                                        for (int i = 0; i < lower.Length - 4; i++)
+                                        {
+                                            if (new string(lower.ToArray()[i..(i + 4)]) == "ine " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
+                                            {
+                                                int index = i + 1;
+                                                while (index != 0 && char.IsLetter(lower[index]))
+                                                    index--;
+                                                if (char.IsWhiteSpace(lower[index]))
+                                                    index++;
+                                                await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 3)]));
+                                            }
+                                        }
+                                    }
+                                    {
+                                        var vowels = "aeiouy";
+                                        var lower = content.ToLower();
+                                        if (new string(lower.ToArray()[^4..^0]) == "ines" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^5]))
+                                        {
+                                            int index = lower.Length - 1;
+                                            while (index != 0 && char.IsLetter(lower[index]))
+                                                index--;
+                                            if (char.IsWhiteSpace(lower[index]))
+                                                index++;
+                                            await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..^4]) + "s, pas " + new string(content.ToArray()[index..^0]));
+                                        }
+                                        for (int i = 0; i < content.Length - 5; i++)
+                                        {
+                                            if (new string(lower.ToArray()[i..(i + 5)]) == "ines " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
+                                            {
+                                                int index = i + 1;
+                                                while (index != 0 && char.IsLetter(lower[index]))
+                                                    index--;
+                                                if (char.IsWhiteSpace(lower[index]))
+                                                    index++;
+                                                await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + "s, pas " + new string(content.ToArray()[index..(i + 4)]));
+                                            }
+                                        }
+                                    }
+                                    {
+                                        if (GetSimplifiedString(content).Contains("padoru") && DateTime.Now > LastPadoruSummoning)
+                                        {
+                                            LastPadoruSummoning = DateTime.Now;
+                                            DateTime xmas = new DateTime(DateTime.Now.Year, 12, 25);
+                                            if (xmas < DateTime.Now)
+                                                xmas = xmas.AddYears(1);
+                                            using var padoru = new Padoru((xmas - DateTime.Today).Days);
+                                            await arg.Message.RespondWithFileAsync(padoru.Output, "padoru is waiting.jpg");
+                                        }
+                                        string simplifed = GetSimplifiedString(content);
+                                        if (simplifed.Contains("partage") || simplifed.Contains("share") || simplifed.Contains("sharing"))
+                                            await arg.Message.CreateReactionAsync(Sharing);
+                                    }
+                                    {
+                                        if (GetSimplifiedString(content).Contains("tagueulebilly")
+                                        || (GetSimplifiedString(content).Contains("tagueule") && arg.MentionedUsers.Contains(Discord.CurrentUser)))
+                                        {
+                                            Muted = DateTime.Now + TimeSpan.FromHours(4);
+                                            await arg.Message.RespondAsync("Ok, je me tais pour 4h");
                                         }
                                     }
                                 }
-                                {
-                                    if (GetSimplifiedString(content).Contains("padoru") && DateTime.Now > LastPadoruSummoning)
-                                    {
-                                        LastPadoruSummoning = DateTime.Now;
-                                        DateTime xmas = new DateTime(DateTime.Now.Year, 12, 25);
-                                        if (xmas < DateTime.Now)
-                                            xmas = xmas.AddYears(1);
-                                        using var padoru = new Padoru((xmas - DateTime.Today).Days);
-                                        await arg.Message.RespondWithFileAsync(padoru.Output, "padoru is waiting.jpg");
-                                    }
-                                    string simplifed = GetSimplifiedString(content);
-                                    if (simplifed.Contains("partage") || simplifed.Contains("share") || simplifed.Contains("sharing"))
-                                        await arg.Message.CreateReactionAsync(Sharing);
-                                }
                             }
+                            catch (Exception)
+                            { }
                         }
-                        catch (Exception)
-                        { }
+                        else if (GetSimplifiedString(arg.Message.Content).Contains("deboutbilly")
+                        || (GetSimplifiedString(arg.Message.Content).Contains("debout") && arg.MentionedUsers.Contains(Discord.CurrentUser)))
+                        {
+                            Muted = DateTime.MinValue;
+                            await arg.Message.RespondAsync("Biggie Cheese est dans la place !");
+                        }
                     });
                 });
             };
@@ -972,6 +907,67 @@ namespace InfoBot
             return emoji;
         }
 
+        private async static Task<List<Tuple<string, string>>> GetLinkedImages(DiscordMessage message)
+        {
+            var attachments = new List<Tuple<string, string>>();
+            foreach (var attachment in message.Attachments)
+                attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
+            if (attachments.Count == 0)
+            {
+                var messages = await message.Channel.GetMessagesAsync(5, message.Id);
+                foreach (var mess in messages)
+                {
+                    var found = false;
+                    if (mess.Attachments.Count > 0)
+                    {
+                        foreach (var att in mess.Attachments.Reverse())
+                        {
+                            var ext = Path.GetExtension(att.FileName);
+                            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
+                            {
+                                found = true;
+                                attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
+                                break;
+                            }
+                        }
+                        if (found)
+                            break;
+                    }
+                    {
+                        for (int i = mess.Content.Length - 5; i >= 0; i--)
+                        {
+                            if (mess.Content.Substring(i, 4) == "http")
+                            {
+                                var url = "";
+                                while (!char.IsWhiteSpace(mess.Content[i]))
+                                {
+                                    url += mess.Content[i];
+                                    i++;
+                                    if (i == mess.Content.Length)
+                                        break;
+                                }
+                                //https://stackoverflow.com/a/11083097
+                                var req = WebRequest.Create(url);
+                                req.Method = "HEAD";
+                                using (var resp = req.GetResponse())
+                                {
+                                    if (resp.ContentType.ToLower(System.Globalization.CultureInfo.InvariantCulture).StartsWith("image/"))
+                                    {
+                                        found = true;
+                                        attachments.Add(new Tuple<string, string>("unknown.png", url));
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        if (found)
+                            break;
+                    }
+                }
+            }
+            return attachments;
+        }
+
         /// <summary>
         /// Simplify to the extreme a string, keeping only lowercase with no diacritics letters and digits
         /// </summary>
@@ -1147,6 +1143,37 @@ namespace InfoBot
             }
 
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        private static Bitmap Resize(Bitmap img, float scale)
+        {
+            var width = (int)(scale * img.Width);
+            var height = (int)(scale * img.Height);
+
+            #region https://stackoverflow.com/a/24199315
+
+            var destRect = new Rectangle(0, 0, width, height);
+            var destImage = new Bitmap(width, height);
+
+            destImage.SetResolution(img.HorizontalResolution, img.VerticalResolution);
+
+            using (var graphics = Graphics.FromImage(destImage))
+            {
+                graphics.CompositingMode = CompositingMode.SourceCopy;
+                graphics.CompositingQuality = CompositingQuality.HighQuality;
+                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                graphics.SmoothingMode = SmoothingMode.HighQuality;
+                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
+
+                using (var wrapMode = new ImageAttributes())
+                {
+                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
+                    graphics.DrawImage(img, destRect, 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, wrapMode);
+                }
+            }
+            return destImage;
+
+            #endregion https://stackoverflow.com/a/24199315
         }
 
         /// <summary>
