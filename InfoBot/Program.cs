@@ -227,16 +227,14 @@ namespace InfoBot
                 allstarLines = lines.ToArray();
             }
             //now we initiate the ical
-            CalendarUrl = new string[8];
-            TPRoles = new DiscordRole[8];
+            CalendarUrl = new string[6];
+            TPRoles = new DiscordRole[6];
             CalendarUrl[0] = ""; //1.1
             CalendarUrl[1] = ""; //1.2
-            CalendarUrl[2] = ""; //2.1
+            CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=98f565239e01830"; //2.1
             CalendarUrl[3] = ""; //2.2
-            CalendarUrl[4] = ""; //3.1
-            CalendarUrl[5] = ""; //3.2
-            CalendarUrl[6] = ""; //4.1
-            CalendarUrl[7] = ""; //4.2
+            CalendarUrl[4] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //3.1
+            CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=1c57595e2401824"; //3.2
             Client = new WebClient();
             DefaultColor = Console.ForegroundColor;
             string token;
@@ -272,7 +270,7 @@ namespace InfoBot
             InitCommands();
             ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
             LoadData();
-            EdtChannel = new DiscordChannel[8];
+            EdtChannel = new DiscordChannel[6];
             ShiFuMiChannel = new DiscordChannel[2];
             Sharing = DUTInfoServer.Emojis.First((e) => e.Name == "partage");
             LastPadoruSummoning = DateTime.MinValue;
@@ -286,8 +284,6 @@ namespace InfoBot
                     EdtChannel[3] = await Discord.GetChannelAsync(623557732930289664);
                     EdtChannel[4] = await Discord.GetChannelAsync(623557762101542923);
                     EdtChannel[5] = await Discord.GetChannelAsync(623557780527382530);
-                    EdtChannel[6] = await Discord.GetChannelAsync(623557795660431390);
-                    EdtChannel[7] = await Discord.GetChannelAsync(623557977223200798);
 
                     ShiFuMiChannel[0] = await Discord.GetChannelAsync(632490916342530058);
                     ShiFuMiChannel[1] = await Discord.GetChannelAsync(632490998488104970);
@@ -298,8 +294,6 @@ namespace InfoBot
                     TPRoles[3] = DUTInfoServer.GetRole(619950035895058432);
                     TPRoles[4] = DUTInfoServer.GetRole(619950048519913492);
                     TPRoles[5] = DUTInfoServer.GetRole(619950099807862794);
-                    TPRoles[6] = DUTInfoServer.GetRole(619950111300255774);
-                    TPRoles[7] = DUTInfoServer.GetRole(619950125573472262);
 
                     TagsChannel = await Discord.GetChannelAsync(646474262021931026);
                     ShitpostChannel = await Discord.GetChannelAsync(622018133758050304);
@@ -315,8 +309,6 @@ namespace InfoBot
                     EdtChannel[3] = EdtChannel[0];
                     EdtChannel[4] = EdtChannel[0];
                     EdtChannel[5] = EdtChannel[0];
-                    EdtChannel[6] = EdtChannel[0];
-                    EdtChannel[7] = EdtChannel[0];
 
                     ShiFuMiChannel[0] = EdtChannel[0];
                     ShiFuMiChannel[1] = EdtChannel[0];
@@ -327,8 +319,6 @@ namespace InfoBot
                     TPRoles[3] = TPRoles[0];
                     TPRoles[4] = TPRoles[0];
                     TPRoles[5] = TPRoles[0];
-                    TPRoles[6] = TPRoles[0];
-                    TPRoles[7] = TPRoles[0];
 
                     TagsChannel = EdtChannel[0];
                     ShitpostChannel = EdtChannel[0];
@@ -997,7 +987,7 @@ namespace InfoBot
                 var defaultObj = new Save();
                 defaultObj.votes = new Vote[0];
                 defaultObj.polls = new Poll[0];
-                defaultObj.oldEdT = new int[8];
+                defaultObj.oldEdT = new int[6];
                 defaultObj.currentSaveTime = DateTime.Now;
                 defaultObj.lastEdtCheck = DateTime.Now;
                 file.Write(JsonConvert.SerializeObject(defaultObj, Formatting.Indented));
