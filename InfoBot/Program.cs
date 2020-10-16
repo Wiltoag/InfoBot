@@ -437,6 +437,7 @@ namespace InfoBot
                                                 correctPattern = false;
                                         if (correctPattern)
                                         {
+                                            Console.WriteLine(strNumber + " found");
                                             if (strNumber == "177013")
                                             {
                                                 await arg.Message.RespondAsync("1̶̽͝7̴̆̋7̷͆͠0̶̓̎1̴̐̿3̵̏̓ est interdit");
@@ -447,15 +448,27 @@ namespace InfoBot
                                             string title = "";
                                             {
                                                 var begin = -1;
-                                                for (int j = 0; j < html.Length - 4; j++)
-                                                    if (html.Substring(j, 4) == "<h1>")
-                                                        begin = j + 4;
-                                                for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
-                                                    title += html[j];
-                                                title.Trim(' ', '\t', '\n', '\r');
+                                                for (int j = 0; j < html.Length - 3; j++)
+                                                    if (html.Substring(j, 3) == "<h1")
+                                                        begin = j + 3;
+                                                if (begin > -1)
+                                                {
+                                                    bool ignore = true;
+                                                    for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
+                                                    {
+                                                        if (html[j] == '<')
+                                                            ignore = true;
+                                                        if (!ignore)
+                                                            title += html[j];
+                                                        if (html[j] == '>')
+                                                            ignore = false;
+                                                    }
+                                                    title.Trim(' ', '\t', '\n', '\r');
+                                                }
                                             }
                                             if (title.Contains("404"))
                                             {
+                                                Console.WriteLine("this number doesn't exists");
                                                 Console.WriteLine("404 tag");
                                                 continue;
                                             }
