@@ -229,7 +229,7 @@ namespace InfoBot
             //now we initiate the ical
             CalendarUrl = new string[6];
             TPRoles = new DiscordRole[6];
-            CalendarUrl[0] = ""; //1.1
+            CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=6df29a513001813"; //1.1
             CalendarUrl[1] = ""; //1.2
             CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=98f565239e01830"; //2.1
             CalendarUrl[3] = ""; //2.2
