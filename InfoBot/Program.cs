@@ -3,19 +3,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using Infobot;
 using Newtonsoft.Json;
-using Ical.Net;
-using Ical.Net.CalendarComponents;
-using IcalToImage;
-using System.Drawing;
-using System.Drawing.Drawing2D;
-using System.Drawing.Imaging;
-using Microsoft.VisualBasic;
 
 namespace InfoBot
 {
@@ -23,660 +18,180 @@ namespace InfoBot
     {
         #region Private Fields
 
-        /// <summary>
-        /// Used to change some actions, such as targeting a special debug channel for spam, and
-        /// disable the edt check
-        /// </summary>
-        private const bool DEBUG = false;
-
-        /// <summary>
-        /// Current line of the all star song waiting to be written
-        /// </summary>
-        private static int AllstarCurrLine;
-
-        /// <summary>
-        /// Lyrics of all star
-        /// </summary>
-        private static string[] allstarLines;
-
-        /// <summary>
-        /// List of all autoruns created
-        /// </summary>
-        private static List<Autorun> Autoruns;
-
-        /// <summary>
-        /// Global HTTP client
-        /// </summary>
-        private static WebClient Client;
-
-        /// <summary>
-        /// The default front color of the local console
-        /// </summary>
-        private static ConsoleColor DefaultColor;
-
-        /// <summary>
-        /// Current line of the deja vu song waiting to be written
-        /// </summary>
-        private static int DejavuCurrLine;
-
-        /// <summary>
-        /// Lyrics of deja vu
-        /// </summary>
-        private static string[] dejavuLines;
-
-        /// <summary>
-        /// The main discord server
-        /// </summary>
-        private static DiscordGuild DUTInfoServer;
-
-        /// <summary>
-        /// list of 8 edt channels, sorted by their group
-        /// </summary>
-        private static DiscordChannel[] EdtChannel;
-
-        /// <summary>
-        /// Last time the edt got checked (used for updating every week)
-        /// </summary>
-        private static DateTime LastEdtCheck;
-
-        /// <summary>
-        /// The last time the great padoru has been summoned
-        /// </summary>
-        private static DateTime LastPadoruSummoning;
-
-        /// <summary>
-        /// The bot is muted til this date
-        /// </summary>
-        private static DateTime Muted;
-
-        /// <summary>
-        /// The next time the bot will restart its client to stay connected in some cases
-        /// </summary>
-        private static DateTime NextRestart;
-
-        /// <summary>
-        /// The old hash of each edt (sorted by their group). Used to detect changes in differents edt.
-        /// </summary>
-        private static int[] OldICalHash;
-
-        /// <summary>
-        /// Current line of the revenge song waiting to be written
-        /// </summary>
-        private static int RevengeCurrLine;
-
-        /// <summary>
-        /// Lyrics of revenge
-        /// </summary>
-        private static string[] revengeLines;
-
-        /// <summary>
-        /// active saved polls (using template)
-        /// </summary>
-        private static List<SavedPoll> SavedPolls;
-
-        /// <summary>
-        /// active saved votes (using template)
-        /// </summary>
-        private static List<SavedVote> SavedVotes;
-
-        /// <summary>
-        /// The sharing emoji
-        /// </summary>
-        private static DiscordEmoji Sharing;
-
-        /// <summary>
-        /// The channels of the 2 shi fu mi players
-        /// </summary>
-        private static DiscordChannel[] ShiFuMiChannel;
-
-        /// <summary>
-        /// Channel for the shitpost
-        /// </summary>
-        private static DiscordChannel ShitpostChannel;
-
-        /// <summary>
-        /// Channel for the nsfw tags
-        /// </summary>
-        private static DiscordChannel TagsChannel;
-
-        /// <summary>
-        /// Id of the test server (NOT the DUT INFO)
-        /// </summary>
-        private static DiscordGuild TestServer;
-
-        /// <summary>
-        /// The 8 roles sorted by their group
-        /// </summary>
-        private static DiscordRole[] TPRoles;
+        private static string token;
 
         #endregion Private Fields
 
-        #region Private Properties
+        #region Public Properties
+
+#if DEBUG
+        public static string WildgoatApi => "http://localhost/Wildgoat_API/api";
+#else
+        public static string WildgoatApi => "http://wildgoat.fr/api";
+#endif
 
         /// <summary>
         /// List of urls to the ical sorted by their group
         /// </summary>
-        private static string[] CalendarUrl { get; set; }
+        public static string[] CalendarUrl { get; private set; }
+
+        /// <summary>
+        /// Global HTTP client
+        /// </summary>
+        public static HttpClient Client { get; private set; }
 
         /// <summary>
         /// Global discord client
         /// </summary>
-        private static DiscordClient Discord { get; set; }
+        public static DiscordClient Discord { get; private set; }
 
         /// <summary>
-        /// Dispatcher used by the main func
+        /// The main discord server
         /// </summary>
-        private static Dispatcher Dispatcher { get; set; }
-
-        #endregion Private Properties
-
-        #region Private Methods
+        public static DiscordGuild DUTInfoServer { get; private set; }
 
         /// <summary>
-        /// Main func, but async
+        /// list of 6 edt channels, sorted by their group
         /// </summary>
-        /// <param name="args">arguments</param>
-        /// <returns>void</returns>
-        private static async Task AsyncMain(string[] args)
+        public static DiscordChannel[] EdtChannel { get; private set; }
+
+        public static Log Logger { get; private set; }
+
+        /// <summary>
+        /// The sharing emoji
+        /// </summary>
+        public static DiscordEmoji Sharing { get; private set; }
+
+        public static TimeSpan Timeout { get; private set; }
+
+        #endregion Public Properties
+
+        #region Public Methods
+
+        public static void Connect()
         {
-            Muted = DateTime.MinValue;
-            //we initiate the differents lyrics
-            RevengeCurrLine = 0;
-            DejavuCurrLine = 0;
-            AllstarCurrLine = 0;
-            using (var stream = new StreamReader("revenge.txt"))
+            Logger.Info("Connecting to Discord...");
+            if (Discord.ConnectAsync().Wait(Timeout))
+                Logger.Info($"Connected to Discord");
+            else
             {
-                var lines = new List<string>();
-                bool end = false;
-                while (!end)
-                {
-                    var line = stream.ReadLine();
-                    if (line == null)
-                        end = true;
-                    else
-                        lines.Add(line);
-                }
-                revengeLines = lines.ToArray();
-            }
-            using (var stream = new StreamReader("dejavu.txt"))
-            {
-                var lines = new List<string>();
-                bool end = false;
-                while (!end)
-                {
-                    var line = stream.ReadLine();
-                    if (line == null)
-                        end = true;
-                    else
-                        lines.Add(line);
-                }
-                dejavuLines = lines.ToArray();
-            }
-            using (var stream = new StreamReader("allstar.txt"))
-            {
-                var lines = new List<string>();
-                bool end = false;
-                while (!end)
-                {
-                    var line = stream.ReadLine();
-                    if (line == null)
-                        end = true;
-                    else
-                        lines.Add(line);
-                }
-                allstarLines = lines.ToArray();
-            }
-            //now we initiate the ical
-            CalendarUrl = new string[6];
-            TPRoles = new DiscordRole[6];
-            CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=6df29a513001813"; //1.1
-            CalendarUrl[1] = ""; //1.2
-            CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=98f565239e01830"; //2.1
-            CalendarUrl[3] = ""; //2.2
-            CalendarUrl[4] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //3.1
-            CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=1c57595e2401824"; //3.2
-            Client = new WebClient();
-            DefaultColor = Console.ForegroundColor;
-            string token;
-            try
-            {
-                using (var sr = new StreamReader("token.txt"))
-                    token = sr.ReadToEnd();
-                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
-            }
-            catch (Exception)
-            {
-                Console.Write("Token :");
-                token = Console.ReadLine();
-                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
-            }
-            Console.WriteLine("Connecting...");
-            if (!ExecuteAsyncMethod(() => Discord.ConnectAsync()))
+                Logger.Error($"Failed to connect to Discord");
                 Environment.Exit(0);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Connected");
-            Console.ForegroundColor = DefaultColor;
-            Console.WriteLine("Initalization...");
-            ///////////////////////////////////////
-            NextRestart = DateTime.Now + TimeSpan.FromHours(1);
-            Random = new Random();
-            Dispatcher = new Dispatcher();
-            var consoleThread = new Thread(ConsoleManager);
-            //we connect to the DUT server
-            if (!ExecuteAsyncMethod(() => Discord.GetGuildAsync(619513574850560010), out DUTInfoServer))
-                DUTInfoServer = null;
-            //we connect to the test server
-            ExecuteAsyncMethod(() => Discord.GetGuildAsync(437704877221609472), out TestServer);
-            InitCommands();
-            ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
-            LoadData();
+            }
+            {
+#if DEBUG
+                var task = Discord.GetGuildAsync(437704877221609472);
+#else
+                var task = Discord.GetGuildAsync(619513574850560010);
+#endif
+                if (task.Wait(Timeout))
+                {
+                    DUTInfoServer = task.Result;
+                    Logger.Info($"Connected to '{DUTInfoServer.Name}'");
+                }
+                else
+                {
+                    Logger.Error($"Failed to connect to the server");
+                    Environment.Exit(0);
+                }
+            }
+            if (Discord.UpdateStatusAsync(new DiscordGame(">ib help")).Wait(Timeout))
+                Logger.Info("Status set");
+            else
+                Logger.Warning("Unable to set status");
+            Sharing = DUTInfoServer.Emojis.FirstOrDefault((e) => e.Name == "partage");
+            if (Sharing == null)
+                Logger.Warning("Sharing emote not found");
             EdtChannel = new DiscordChannel[6];
-            ShiFuMiChannel = new DiscordChannel[2];
-            Sharing = DUTInfoServer.Emojis.First((e) => e.Name == "partage");
-            LastPadoruSummoning = DateTime.MinValue;
-            if (!DEBUG)
-                ExecuteAsyncMethod(async () =>
-                {
-                    //all the specific chan/roles sorted by their group
-                    EdtChannel[0] = await Discord.GetChannelAsync(623557669810077697);
-                    EdtChannel[1] = await Discord.GetChannelAsync(623557699497623602);
-                    EdtChannel[2] = await Discord.GetChannelAsync(623557716694138890);
-                    EdtChannel[3] = await Discord.GetChannelAsync(623557732930289664);
-                    EdtChannel[4] = await Discord.GetChannelAsync(623557762101542923);
-                    EdtChannel[5] = await Discord.GetChannelAsync(623557780527382530);
-
-                    ShiFuMiChannel[0] = await Discord.GetChannelAsync(632490916342530058);
-                    ShiFuMiChannel[1] = await Discord.GetChannelAsync(632490998488104970);
-
-                    TPRoles[0] = DUTInfoServer.GetRole(619949947042791472);
-                    TPRoles[1] = DUTInfoServer.GetRole(619949993096118292);
-                    TPRoles[2] = DUTInfoServer.GetRole(619950016630358086);
-                    TPRoles[3] = DUTInfoServer.GetRole(619950035895058432);
-                    TPRoles[4] = DUTInfoServer.GetRole(619950048519913492);
-                    TPRoles[5] = DUTInfoServer.GetRole(619950099807862794);
-
-                    TagsChannel = await Discord.GetChannelAsync(646474262021931026);
-                    ShitpostChannel = await Discord.GetChannelAsync(622018133758050304);
-                });
-
-            if (DEBUG)
-                ExecuteAsyncMethod(async () =>
-                {
-                    //debug equivalent, target #debug-bot and "@Developpeur du BOT"
-                    EdtChannel[0] = await Discord.GetChannelAsync(623874313539289125);
-                    EdtChannel[1] = EdtChannel[0];
-                    EdtChannel[2] = EdtChannel[0];
-                    EdtChannel[3] = EdtChannel[0];
-                    EdtChannel[4] = EdtChannel[0];
-                    EdtChannel[5] = EdtChannel[0];
-
-                    ShiFuMiChannel[0] = EdtChannel[0];
-                    ShiFuMiChannel[1] = EdtChannel[0];
-
-                    TPRoles[0] = DUTInfoServer.GetRole(623874435845324853);
-                    TPRoles[1] = TPRoles[0];
-                    TPRoles[2] = TPRoles[0];
-                    TPRoles[3] = TPRoles[0];
-                    TPRoles[4] = TPRoles[0];
-                    TPRoles[5] = TPRoles[0];
-
-                    TagsChannel = EdtChannel[0];
-                    ShitpostChannel = EdtChannel[0];
-                });
-            async Task createdMess1(DSharpPlus.EventArgs.MessageCreateEventArgs arg)
             {
-                //we execute in the same thread using the dispatcher
-                Dispatcher.Execute(async () =>
+#if DEBUG
+                var task = Discord.GetChannelAsync(437704877221609474);
+#else
+                var task = Discord.GetChannelAsync(623557669810077697);
+#endif
+                if (task.Wait(Timeout))
                 {
-                    //native exception handling, preventing crashes
-                    ExecuteAsyncMethod(async () =>
-                    {
-                        if (DateTime.Now > Muted)
-                        {
-                            //for messages containing "c'était sûr" to respond with our lord and savior Sardoche
-                            var content = arg.Message.Content;
-                            content = content.ToLower();
-                            var newStr = "";
-                            foreach (var c in content)
-                            {
-                                if (c != ' ' && c != '\'')
-                                {
-                                    if (c == 'é')
-                                        newStr += 'e';
-                                    else if (c == 'û')
-                                        newStr += 'u';
-                                    else
-                                        newStr += c;
-                                }
-                            }
-                            if (newStr.Contains("cetaitsur"))
-                                await arg.Message.RespondAsync("https://cdn.discordapp.com/attachments/619513575295418392/625709998692892682/sardoche.gif");
-                        }
-                    });
-                });
-            };
-            //whenever a messages gets created...
-            Discord.MessageCreated += createdMess1;
-            async Task createdMess2(DSharpPlus.EventArgs.MessageCreateEventArgs arg)
+                    EdtChannel[0] = task.Result;
+                    Logger.Info($"'{task.Result.Name}' found");
+                }
+                else
+                    Logger.Warning("Unable to find EdtChannel 1.1");
+            }
             {
-                Dispatcher.Execute(async () =>
+#if DEBUG
+                var task = Discord.GetChannelAsync(437704877221609474);
+#else
+                var task = Discord.GetChannelAsync(623557699497623602);
+#endif
+                if (task.Wait(Timeout))
                 {
-                    ExecuteAsyncMethod(async () =>
-                    {
-                        if (DateTime.Now > Muted)
-                        {
-                            var content = arg.Message.Content;
-                            try
-                            {
-                                //handling revenge lyrics
-                                if (EvaluateWholeStringSimilarity(content, revengeLines[RevengeCurrLine]) >= .8 && !arg.Author.IsBot)
-                                {
-                                    //if a similarity has been detected and it's not comming from a bot
-                                    RevengeCurrLine += 2;
-                                    //we test if we are at the end of the song
-                                    if (RevengeCurrLine - 1 < revengeLines.Length)
-                                        await arg.Message.RespondAsync(revengeLines[RevengeCurrLine - 1]);
-                                    else
-                                        RevengeCurrLine = 0;
-                                }
-                                else if (GetSimplifiedString(content).Contains(GetSimplifiedString(revengeLines[0])) && !arg.Author.IsBot)
-                                {
-                                    //if we start over again (first line of the lyrics)
-                                    RevengeCurrLine = 2;
-                                    await arg.Message.RespondAsync(revengeLines[1]);
-                                }
-                                //handling all star lyrics
-                                if (EvaluateWholeStringSimilarity(content, allstarLines[AllstarCurrLine]) >= .8 && !arg.Author.IsBot)
-                                {
-                                    //if a similarity has been detected and it's not comming from a bot
-                                    AllstarCurrLine += 2;
-                                    //we test if we are at the end of the song
-                                    if (AllstarCurrLine - 1 < allstarLines.Length)
-                                        await arg.Message.RespondAsync(allstarLines[AllstarCurrLine - 1]);
-                                    else
-                                        AllstarCurrLine = 0;
-                                }
-                                else if (GetSimplifiedString(content).Contains(GetSimplifiedString(allstarLines[0])) && !arg.Author.IsBot)
-                                {
-                                    //if we start over again (first line of the lyrics)
-                                    AllstarCurrLine = 2;
-                                    await arg.Message.RespondAsync(allstarLines[1]);
-                                }
-                                //same as above, but for deja vu
-                                if (EvaluateWholeStringSimilarity(content, dejavuLines[DejavuCurrLine]) >= .8 && !arg.Author.IsBot)
-                                {
-                                    DejavuCurrLine += 2;
-                                    if (DejavuCurrLine - 1 < dejavuLines.Length)
-                                        await arg.Message.RespondAsync(dejavuLines[DejavuCurrLine - 1]);
-                                    else
-                                        DejavuCurrLine = 0;
-                                }
-                                else if (GetSimplifiedString(content).Contains(GetSimplifiedString(dejavuLines[8])) && !arg.Author.IsBot)
-                                {
-                                    //special starting point, where it it "deja vu !"
-                                    DejavuCurrLine = 10;
-                                    await arg.Message.RespondAsync(dejavuLines[9]);
-                                }
-                                else if (EvaluateWholeStringSimilarity(content, dejavuLines[0]) >= .8 && !arg.Author.IsBot)
-                                {
-                                    DejavuCurrLine = 2;
-                                    await arg.Message.RespondAsync(dejavuLines[1]);
-                                }
-                                if (!arg.Author.IsBot && !arg.Channel.IsPrivate)
-                                {
-                                    for (int i = 0; i < content.Length - 5; i++)
-                                    {
-                                        string strNumber = content.Substring(i, 6);
-                                        bool correctPattern = true;
-                                        if (i > 0 && !char.IsWhiteSpace(content[i - 1]))
-                                            correctPattern = false;
-                                        if (i < content.Length - 6 && !char.IsWhiteSpace(content[i + 6]))
-                                            correctPattern = false;
-                                        foreach (var item in strNumber)
-                                            if (!char.IsDigit(item))
-                                                correctPattern = false;
-                                        if (correctPattern)
-                                        {
-                                            Console.WriteLine(strNumber + " found");
-                                            if (strNumber == "177013")
-                                            {
-                                                await arg.Message.RespondAsync("1̶̽͝7̴̆̋7̷͆͠0̶̓̎1̴̐̿3̵̏̓ est interdit");
-                                                continue;
-                                            }
-                                            var address = "https://nhentai.net/g/" + strNumber;
-                                            var html = Client.DownloadString(address);
-                                            string title = "";
-                                            {
-                                                var begin = -1;
-                                                for (int j = 0; j < html.Length - 3; j++)
-                                                    if (html.Substring(j, 3) == "<h1")
-                                                        begin = j + 3;
-                                                if (begin > -1)
-                                                {
-                                                    bool ignore = true;
-                                                    for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
-                                                    {
-                                                        if (html[j] == '<')
-                                                            ignore = true;
-                                                        if (!ignore)
-                                                            title += html[j];
-                                                        if (html[j] == '>')
-                                                            ignore = false;
-                                                    }
-                                                    title.Trim(' ', '\t', '\n', '\r');
-                                                }
-                                            }
-                                            if (title.Contains("404"))
-                                            {
-                                                Console.WriteLine("this number doesn't exists");
-                                                Console.WriteLine("404 tag");
-                                                continue;
-                                            }
-                                            var sb = new StringBuilder();
-                                            sb.Append("Tag :__");
-                                            sb.Append(strNumber);
-                                            sb.Append("__ posted by **");
-                                            sb.Append(arg.Author.Username);
-                                            sb.Append("** __");
-                                            sb.Append(title);
-                                            sb.Append("__\nAvailable here : ");
-                                            sb.Append(address);
-                                            await TagsChannel.SendMessageAsync(sb.ToString());
-                                        }
-                                    }
-                                    for (int i = 0; i < content.Length - 4; i++)
-                                    {
-                                        string strNumber = content.Substring(i, 5);
-                                        bool correctPattern = true;
-                                        if (i > 0 && !char.IsWhiteSpace(content[i - 1]))
-                                            correctPattern = false;
-                                        if (i < content.Length - 5 && !char.IsWhiteSpace(content[i + 5]))
-                                            correctPattern = false;
-                                        foreach (var item in strNumber)
-                                            if (!char.IsDigit(item))
-                                                correctPattern = false;
-                                        if (correctPattern)
-                                        {
-                                            var address = "https://nhentai.net/g/" + strNumber;
-                                            var html = Client.DownloadString(address);
-                                            string title = "";
-                                            {
-                                                var begin = -1;
-                                                for (int j = 0; j < html.Length - 4; j++)
-                                                    if (html.Substring(j, 4) == "<h1>")
-                                                        begin = j + 4;
-                                                for (int j = begin; j < html.Length - 5 && html.Substring(j, 5) != "</h1>"; j++)
-                                                    title += html[j];
-                                                title.Trim(' ', '\t', '\n', '\r');
-                                            }
-                                            if (title.Contains("404"))
-                                                continue;
-                                            var sb = new StringBuilder();
-                                            sb.Append("Tag :__");
-                                            sb.Append(strNumber);
-                                            sb.Append("__ posted by **");
-                                            sb.Append(arg.Author.Username);
-                                            sb.Append("** __");
-                                            sb.Append(title);
-                                            sb.Append("__\nAvailable here : ");
-                                            sb.Append(address);
-                                            await TagsChannel.SendMessageAsync(sb.ToString());
-                                        }
-                                    }
-                                    {
-                                        var vowels = "aeiouy";
-                                        var lower = content.ToLower();
-                                        if (new string(lower.ToArray()[^3..^0]) == "ine" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^4]))
-                                        {
-                                            int index = lower.Length - 1;
-                                            while (index != 0 && char.IsLetter(lower[index]))
-                                                index--;
-                                            if (char.IsWhiteSpace(lower[index]))
-                                                index++;
-                                            await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..^3]) + ", pas " + new string(content.ToArray()[index..^0]));
-                                        }
-                                        for (int i = 0; i < lower.Length - 4; i++)
-                                        {
-                                            if (new string(lower.ToArray()[i..(i + 4)]) == "ine " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
-                                            {
-                                                int index = i + 1;
-                                                while (index != 0 && char.IsLetter(lower[index]))
-                                                    index--;
-                                                if (char.IsWhiteSpace(lower[index]))
-                                                    index++;
-                                                await arg.Message.RespondAsync("on dit pain au " + new string(content.ToArray()[index..i]) + ", pas " + new string(content.ToArray()[index..(i + 3)]));
-                                            }
-                                        }
-                                    }
-                                    {
-                                        var vowels = "aeiouy";
-                                        var lower = content.ToLower();
-                                        if (new string(lower.ToArray()[^4..^0]) == "ines" && !vowels.Contains(RemoveDiacritics(lower).ToArray()[^5]))
-                                        {
-                                            int index = lower.Length - 1;
-                                            while (index != 0 && char.IsLetter(lower[index]))
-                                                index--;
-                                            if (char.IsWhiteSpace(lower[index]))
-                                                index++;
-                                            await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..^4]) + "s, pas " + new string(content.ToArray()[index..^0]));
-                                        }
-                                        for (int i = 0; i < content.Length - 5; i++)
-                                        {
-                                            if (new string(lower.ToArray()[i..(i + 5)]) == "ines " && !vowels.Contains(RemoveDiacritics(lower).ToArray()[i - 1]))
-                                            {
-                                                int index = i + 1;
-                                                while (index != 0 && char.IsLetter(lower[index]))
-                                                    index--;
-                                                if (char.IsWhiteSpace(lower[index]))
-                                                    index++;
-                                                await arg.Message.RespondAsync("on dit pains aux " + new string(content.ToArray()[index..i]) + "s, pas " + new string(content.ToArray()[index..(i + 4)]));
-                                            }
-                                        }
-                                    }
-                                    {
-                                        if (GetSimplifiedString(content).Contains("padoru") && DateTime.Now > LastPadoruSummoning)
-                                        {
-                                            LastPadoruSummoning = DateTime.Now;
-                                            DateTime xmas = new DateTime(DateTime.Now.Year, 12, 25);
-                                            if (xmas < DateTime.Now)
-                                                xmas = xmas.AddYears(1);
-                                            using var padoru = new Padoru((xmas - DateTime.Today).Days);
-                                            await arg.Message.RespondWithFileAsync(padoru.Output, "padoru is waiting.jpg");
-                                        }
-                                        string simplifed = GetSimplifiedString(content);
-                                        if (simplifed.Contains("partage") || simplifed.Contains("share") || simplifed.Contains("sharing"))
-                                            await arg.Message.CreateReactionAsync(Sharing);
-                                    }
-                                    {
-                                        if (GetSimplifiedString(content).Contains("tagueulebilly")
-                                        || (GetSimplifiedString(content).Contains("tagueule") && arg.MentionedUsers.Contains(Discord.CurrentUser)))
-                                        {
-                                            Muted = DateTime.Now + TimeSpan.FromHours(4);
-                                            await arg.Message.RespondAsync("Ok, je me tais pour 4h");
-                                        }
-                                    }
-                                }
-                            }
-                            catch (Exception)
-                            { }
-                        }
-                        else if (GetSimplifiedString(arg.Message.Content).Contains("deboutbilly")
-                        || (GetSimplifiedString(arg.Message.Content).Contains("debout") && arg.MentionedUsers.Contains(Discord.CurrentUser)))
-                        {
-                            Muted = DateTime.MinValue;
-                            await arg.Message.RespondAsync("Biggie Cheese est dans la place !");
-                        }
-                    });
-                });
-            };
-            //same as above
-            Discord.MessageCreated += createdMess2;
-
-            ///////////////////////////////////////
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Initialized");
-            Console.ForegroundColor = DefaultColor;
-            consoleThread.Start();
-            //we always want to check if everything is ok when starting, so we go a little bit back in time
-            DateTimeOffset lastListCheck = DateTimeOffset.UnixEpoch;
-            DateTimeOffset lastCalendarCheck = DateTimeOffset.UnixEpoch;
-            DateTimeOffset lastEdtDayCheck = DateTimeOffset.UnixEpoch;
-
-            while (true)
+                    EdtChannel[1] = task.Result;
+                    Logger.Info($"'{task.Result.Name}' found");
+                }
+                else
+                    Logger.Warning("Unable to find EdtChannel 1.2");
+            }
             {
-                //dispatcher handling, whenever we add a func to execute to the dispatcher, it gets added here so everything is executed on the same thread
-                var next = Dispatcher.GetNext();
-                if (next != null)
-                    ExecuteAsyncMethod(next);
-                //We check for the votes/polls every 20 secs
-                if (lastListCheck + TimeSpan.FromSeconds(20) < DateTimeOffset.Now)
+#if DEBUG
+                var task = Discord.GetChannelAsync(437704877221609474);
+#else
+                var task = Discord.GetChannelAsync(623557716694138890);
+#endif
+                if (task.Wait(Timeout))
                 {
-                    lastListCheck = DateTimeOffset.Now;
-                    ExecuteAsyncMethod(UpdateLists);
+                    EdtChannel[2] = task.Result;
+                    Logger.Info($"'{task.Result.Name}' found");
                 }
-                //We check for the edt every 2 hours
-                if (lastCalendarCheck + TimeSpan.FromHours(2) < DateTimeOffset.Now)
+                else
+                    Logger.Warning("Unable to find EdtChannel 2.1");
+            }
+            {
+#if DEBUG
+                var task = Discord.GetChannelAsync(437704877221609474);
+#else
+                var task = Discord.GetChannelAsync(623557732930289664);
+#endif
+                if (task.Wait(Timeout))
                 {
-                    lastCalendarCheck = DateTimeOffset.Now;
-                    ExecuteAsyncMethod(async () => UpdateCalendars());
+                    EdtChannel[3] = task.Result;
+                    Logger.Info($"'{task.Result.Name}' found");
                 }
-                if (NextRestart < DateTime.Now)
+                else
+                    Logger.Warning("Unable to find EdtChannel 2.2");
+            }
+            {
+#if DEBUG
+                var task = Discord.GetChannelAsync(437704877221609474);
+#else
+                var task = Discord.GetChannelAsync(623557762101542923);
+#endif
+                if (task.Wait(Timeout))
                 {
-                    NextRestart = DateTime.Now + TimeSpan.FromHours(1);
-                    ExecuteAsyncMethod(() => Discord.DisconnectAsync());
-                    Discord.Dispose();
-                    try
-                    {
-                        Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
-                    }
-                    catch (Exception)
-                    {
-                    }
-                    Console.WriteLine("Reconnecting...");
-                    if (!ExecuteAsyncMethod(() => Discord.ConnectAsync()))
-                        Environment.Exit(0);
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Connected");
-                    Console.ForegroundColor = DefaultColor;
-                    Console.WriteLine("Initalization...");
-                    ExecuteAsyncMethod(() => Discord.GetGuildAsync(437704877221609472), out TestServer);
-                    InitCommands();
-                    ExecuteAsyncMethod(() => Discord.UpdateStatusAsync(new DiscordGame(">ib help")));
-                    LoadData();
-                    //whenever a messages gets created...
-                    Discord.MessageCreated += createdMess1;
-                    //same as above
-                    Discord.MessageCreated += createdMess2;
-
-                    ///////////////////////////////////////
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Initialized");
-                    Console.ForegroundColor = DefaultColor;
+                    EdtChannel[4] = task.Result;
+                    Logger.Info($"'{task.Result.Name}' found");
                 }
-                //give some resting time to that poor CPU !
-                Thread.Sleep(TimeSpan.FromMilliseconds(50));
+                else
+                    Logger.Warning("Unable to find EdtChannel 3.1");
+            }
+            {
+#if DEBUG
+                var task = Discord.GetChannelAsync(437704877221609474);
+#else
+                var task = Discord.GetChannelAsync(623557780527382530);
+#endif
+                if (task.Wait(Timeout))
+                {
+                    EdtChannel[5] = task.Result;
+                    Logger.Info($"'{task.Result.Name}' found");
+                }
+                else
+                    Logger.Warning("Unable to find EdtChannel 3.2");
             }
         }
+
+        #endregion Public Methods
+
+        #region Private Methods
 
         /// <summary>
         /// Function that return a value between 0 and 1 according to the similarity of 2 strings
@@ -740,67 +255,6 @@ namespace InfoBot
         }
 
         /// <summary>
-        /// Manages the local console, currently poorly implemented.
-        /// </summary>
-        private static void ConsoleManager()
-        {
-            while (true)
-            {
-                var input = Console.ReadLine();
-                ParseInput(input, out string command, out string[] args);
-                try
-                {
-                    switch (command)
-                    {
-                        case "help":
-                            Console.WriteLine("quit : close the bot.");
-                            Console.WriteLine("calendar : force update the calendars.");
-                            Console.WriteLine("reconnect : reconnect the bot.");
-                            Console.WriteLine("help : display this info.");
-                            Console.WriteLine("disp <channel> <message> : send a message to a channel.");
-                            break;
-
-                        case "quit":
-                            Environment.Exit(0);
-                            break;
-
-                        case "calendar":
-                            for (int i = 0; i < OldICalHash.Length; i++)
-                                OldICalHash[i] = 0;
-                            ExecuteAsyncMethod(async () => UpdateCalendars());
-                            break;
-
-                        case "disp":
-                            DiscordChannel chan;
-                            if (!ExecuteAsyncMethod(() => Discord.GetChannelAsync(ulong.Parse(args[0])), out chan))
-                                break;
-                            ExecuteAsyncMethod(() => chan.SendMessageAsync(args[1]));
-                            break;
-
-                        case "reconnect":
-                            Console.WriteLine("Connecting...");
-                            if (ExecuteAsyncMethod(() => Discord.ReconnectAsync()))
-                            {
-                                Console.ForegroundColor = ConsoleColor.Green;
-                                Console.WriteLine("Connected");
-                                Console.ForegroundColor = DefaultColor;
-                            }
-                            break;
-
-                        default:
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Command not recognized, type \"help\"");
-                            Console.ForegroundColor = DefaultColor;
-                            break;
-                    }
-                }
-                catch (Exception)
-                {
-                }
-            }
-        }
-
-        /// <summary>
         /// ALl in one function to give a value from 0 to 1 depending of the similarity of 2
         /// strings. It first simplifies them and check if the content contains a possible origin
         /// string. That means it can return a value of 1 if the content contains the origin even if
@@ -823,54 +277,6 @@ namespace InfoBot
                 i++;
             } while (i <= content.Length - origin.Length);
             return highest;
-        }
-
-        /// <summary>
-        /// Safe from crashes way to trun an async method
-        /// </summary>
-        /// <param name="func">async func to run</param>
-        /// <returns>True if everything went well, false if it returned an exception.</returns>
-        private static bool ExecuteAsyncMethod(Func<Task> func)
-        {
-            try
-            {
-                if (!func().Wait(TimeSpan.FromSeconds(60)))
-                    throw new Exception("60 sec timeout passed, command canceled");
-            }
-            catch (Exception e)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Fatal error : " + e.ToString());
-                Console.ForegroundColor = DefaultColor;
-                return false;
-            }
-            return true;
-        }
-
-        /// <summary>
-        /// Safe from crashes way to trun an async method
-        /// </summary>
-        /// <param name="func">async func to run</param>
-        /// <param name="returnValue">Possible return value of the async func</param>
-        /// <returns>True if everything went well, false if it returned an exception.</returns>
-        private static bool ExecuteAsyncMethod<T>(Func<Task<T>> func, out T returnValue)
-        {
-            try
-            {
-                var task = func();
-                if (!task.Wait(TimeSpan.FromSeconds(10)))
-                    throw new Exception("10 sec timeout passed, command canceled");
-                returnValue = task.Result;
-            }
-            catch (Exception e)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("Fatal error : " + e.ToString());
-                Console.ForegroundColor = DefaultColor;
-                returnValue = default;
-                return false;
-            }
-            return true;
         }
 
         /// <summary>
@@ -910,67 +316,6 @@ namespace InfoBot
             return emoji;
         }
 
-        private async static Task<List<Tuple<string, string>>> GetLinkedImages(DiscordMessage message)
-        {
-            var attachments = new List<Tuple<string, string>>();
-            foreach (var attachment in message.Attachments)
-                attachments.Add(new Tuple<string, string>(attachment.FileName, attachment.Url));
-            if (attachments.Count == 0)
-            {
-                var messages = await message.Channel.GetMessagesAsync(5, message.Id);
-                foreach (var mess in messages)
-                {
-                    var found = false;
-                    if (mess.Attachments.Count > 0)
-                    {
-                        foreach (var att in mess.Attachments.Reverse())
-                        {
-                            var ext = Path.GetExtension(att.FileName);
-                            if (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".gif")
-                            {
-                                found = true;
-                                attachments.Add(new Tuple<string, string>(att.FileName, att.Url));
-                                break;
-                            }
-                        }
-                        if (found)
-                            break;
-                    }
-                    {
-                        for (int i = mess.Content.Length - 5; i >= 0; i--)
-                        {
-                            if (mess.Content.Substring(i, 4) == "http")
-                            {
-                                var url = "";
-                                while (!char.IsWhiteSpace(mess.Content[i]))
-                                {
-                                    url += mess.Content[i];
-                                    i++;
-                                    if (i == mess.Content.Length)
-                                        break;
-                                }
-                                //https://stackoverflow.com/a/11083097
-                                var req = WebRequest.Create(url);
-                                req.Method = "HEAD";
-                                using (var resp = req.GetResponse())
-                                {
-                                    if (resp.ContentType.ToLower(System.Globalization.CultureInfo.InvariantCulture).StartsWith("image/"))
-                                    {
-                                        found = true;
-                                        attachments.Add(new Tuple<string, string>("unknown.png", url));
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        if (found)
-                            break;
-                    }
-                }
-            }
-            return attachments;
-        }
-
         /// <summary>
         /// Simplify to the extreme a string, keeping only lowercase with no diacritics letters and digits
         /// </summary>
@@ -989,84 +334,36 @@ namespace InfoBot
         }
 
         /// <summary>
-        /// Loads the saved data.json file
-        /// </summary>
-        private static void LoadData()
-        {
-            //here we extract everything saved from the last session, so we keep track of everything
-            if (!File.Exists("data.json"))
-            {
-                var file = new StreamWriter("data.json");
-                var defaultObj = new Save();
-                defaultObj.votes = new Vote[0];
-                defaultObj.polls = new Poll[0];
-                defaultObj.oldEdT = new int[6];
-                defaultObj.currentSaveTime = DateTime.Now;
-                defaultObj.lastEdtCheck = DateTime.Now;
-                file.Write(JsonConvert.SerializeObject(defaultObj, Formatting.Indented));
-                file.Close();
-            }
-            var stream = new StreamReader("data.json");
-            var obj = JsonConvert.DeserializeObject<Save>(stream.ReadToEnd());
-            stream.Close();
-            OldICalHash = obj.oldEdT;
-            LastEdtCheck = obj.lastEdtCheck;
-
-            foreach (var item in obj.votes)
-            {
-                var vote = new VoteMessage();
-                vote.ID = item.id;
-                vote.Lifetime = item.duration;
-                vote.ShowUsers = item.showUsers;
-                DiscordChannel chan;
-                ExecuteAsyncMethod(() => Discord.GetChannelAsync(item.message.channel), out chan);
-                DiscordMessage mess;
-                ExecuteAsyncMethod(() => chan.GetMessageAsync(item.message.id), out mess);
-                vote.Message = mess;
-                vote.Author = item.author;
-                Votes.Add(vote);
-            }
-            foreach (var item in obj.polls)
-            {
-                var poll = new PollMessage();
-                poll.ID = item.id;
-                poll.Lifetime = item.duration;
-                poll.ShowUsers = item.showUsers;
-                DiscordChannel chan;
-                ExecuteAsyncMethod(() => Discord.GetChannelAsync(item.message.channel), out chan);
-                DiscordMessage mess;
-                ExecuteAsyncMethod(() => chan.GetMessageAsync(item.message.id), out mess);
-                poll.Author = item.author;
-                poll.Message = mess;
-                poll.Open = item.open;
-                poll.Choices = new List<Tuple<string, DiscordEmoji>>();
-                foreach (var item2 in item.choices)
-                    poll.Choices.Add(new Tuple<string, DiscordEmoji>(item2.name, GetEmoji(item2.id)));
-
-                Polls.Add(poll);
-            }
-            if (obj.savedVotes != null)
-                SavedVotes = new List<SavedVote>(obj.savedVotes);
-            else
-                SavedVotes = new List<SavedVote>();
-            if (obj.savedPolls != null)
-                SavedPolls = new List<SavedPoll>(obj.savedPolls);
-            else
-                SavedPolls = new List<SavedPoll>();
-            if (obj.autoruns != null)
-                Autoruns = new List<Autorun>(obj.autoruns);
-            else
-                Autoruns = new List<Autorun>();
-        }
-
-        /// <summary>
-        /// Main func
+        /// Main func, but async
         /// </summary>
         /// <param name="args">arguments</param>
+        /// <returns>void</returns>
         private static void Main(string[] args)
         {
-            //we better run the async version asap
-            Task.Run(() => AsyncMain(args)).GetAwaiter().GetResult();
+            Logger = new Log();
+            Timeout = TimeSpan.FromSeconds(15);
+            //now we initiate the ical
+            CalendarUrl = new string[6];
+            CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=6df29a513001813"; //1.1
+            CalendarUrl[1] = ""; //1.2
+            CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=98f565239e01830"; //2.1
+            CalendarUrl[3] = ""; //2.2
+            CalendarUrl[4] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //3.1
+            CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=1c57595e2401824"; //3.2
+            Client = new HttpClient();
+            try
+            {
+                using (var sr = new StreamReader("token.txt"))
+                    token = sr.ReadToEnd();
+                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+            }
+            catch (Exception)
+            {
+                Console.Write("Token :");
+                token = Console.ReadLine();
+                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+            }
+            Connect();
         }
 
         /// <summary>
@@ -1146,393 +443,6 @@ namespace InfoBot
             }
 
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
-        }
-
-        private static Bitmap Resize(Bitmap img, float scale)
-        {
-            var width = (int)(scale * img.Width);
-            var height = (int)(scale * img.Height);
-
-            #region https://stackoverflow.com/a/24199315
-
-            var destRect = new Rectangle(0, 0, width, height);
-            var destImage = new Bitmap(width, height);
-
-            destImage.SetResolution(img.HorizontalResolution, img.VerticalResolution);
-
-            using (var graphics = Graphics.FromImage(destImage))
-            {
-                graphics.CompositingMode = CompositingMode.SourceCopy;
-                graphics.CompositingQuality = CompositingQuality.HighQuality;
-                graphics.InterpolationMode = InterpolationMode.HighQualityBicubic;
-                graphics.SmoothingMode = SmoothingMode.HighQuality;
-                graphics.PixelOffsetMode = PixelOffsetMode.HighQuality;
-
-                using (var wrapMode = new ImageAttributes())
-                {
-                    wrapMode.SetWrapMode(WrapMode.TileFlipXY);
-                    graphics.DrawImage(img, destRect, 0, 0, img.Width, img.Height, GraphicsUnit.Pixel, wrapMode);
-                }
-            }
-            return destImage;
-
-            #endregion https://stackoverflow.com/a/24199315
-        }
-
-        /// <summary>
-        /// Here we save all the current data to keep it for the next session
-        /// </summary>
-        private static void SaveData()
-        {
-            var obj = new Save();
-            obj.lastEdtCheck = LastEdtCheck;
-            obj.savedPolls = SavedPolls.ToArray();
-            obj.savedVotes = SavedVotes.ToArray();
-            obj.autoruns = Autoruns.ToArray();
-            obj.oldEdT = OldICalHash;
-            obj.currentSaveTime = DateTime.Now;
-            List<Vote> v = new List<Vote>();
-            foreach (var item in Votes)
-                v.Add(new Vote()
-                {
-                    id = item.ID,
-                    author = item.Author,
-                    duration = item.Lifetime,
-                    showUsers = item.ShowUsers,
-                    message = new SpecialMessage() { channel = item.Message.ChannelId, id = item.Message.Id }
-                });
-            obj.votes = v.ToArray();
-            List<Poll> p = new List<Poll>();
-            foreach (var item in Polls)
-            {
-                List<Choice> choices = new List<Choice>();
-                foreach (var item2 in item.Choices)
-                    choices.Add(new Choice() { id = GetCode(item2.Item2), name = item2.Item1 });
-
-                p.Add(new Poll()
-                {
-                    id = item.ID,
-                    author = item.Author,
-                    duration = item.Lifetime,
-                    showUsers = item.ShowUsers,
-                    open = item.Open,
-                    message = new SpecialMessage() { channel = item.Message.ChannelId, id = item.Message.Id },
-                    choices = choices.ToArray()
-                });
-            }
-            obj.polls = p.ToArray();
-            var stream = new StreamWriter("data.json");
-            stream.Write(JsonConvert.SerializeObject(obj, Formatting.Indented));
-            stream.Close();
-        }
-
-        /// <summary>
-        /// Here we check for the edt changes
-        /// </summary>
-        private static void UpdateCalendars()
-        {
-            //if we are in debug mode, we obviously don't take a look at it since it's can be pretty heavy for the bot
-            if (!DEBUG)
-            {
-                Console.WriteLine("Updating calendars...");
-                {
-                    DateTime mondayThisWeek = DateTime.Today - TimeSpan.FromDays((int)DateTime.Today.DayOfWeek - 1);
-                    //A list of the days to check, starting the current week up to the end of the next week
-                    DateTime[] week1 = new DateTime[]
-                    {
-                mondayThisWeek,
-                mondayThisWeek.AddDays(1),
-                mondayThisWeek.AddDays(2),
-                mondayThisWeek.AddDays(3),
-                mondayThisWeek.AddDays(4),
-                mondayThisWeek.AddDays(5)
-                    };
-                    DateTime[] week2 = new DateTime[]
-                    {
-                mondayThisWeek.AddDays(7),
-                mondayThisWeek.AddDays(8),
-                mondayThisWeek.AddDays(9),
-                mondayThisWeek.AddDays(10),
-                mondayThisWeek.AddDays(11),
-                mondayThisWeek.AddDays(12)
-                    };
-                    //the new list of ical strings we will get from the urls
-                    var stringICal = new string[CalendarUrl.Length];
-                    //gets true if we are in a new week (or if we are in a sooner moment in a week than the last time we checked)
-                    var newWeek = ((int)DateTime.Today.DayOfWeek - 1) % 7 < ((int)LastEdtCheck.DayOfWeek - 1) % 7;
-                    for (int i = 0; i < (DEBUG ? 1 : CalendarUrl.Length); i++)
-                    {
-                        try
-                        {
-                            //we download the differents icals
-                            stringICal[i] = Client.DownloadString(CalendarUrl[i]);
-                        }
-                        catch (Exception)
-                        {
-                            //if no ical is provided, we just ignore it. I already give enough the the promotion, if they don't give me the link, fuck them.
-                            /*IReadOnlyList<DiscordMessage> messages;
-                            ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
-                            if (messages != null)
-                            {
-                                foreach (var mess in messages)
-                                {
-                                    //if they come from a bot (me), we just delete them
-                                    if (mess.Author.IsBot)
-                                        ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
-                                }
-                            }
-                            DiscordUser Me;
-                            ExecuteAsyncMethod(() => Discord.GetUserAsync(290563482347241472), out Me);
-                            ExecuteAsyncMethod(() => EdtChannel[i].SendMessageAsync(
-TPRoles[i].Mention +
-@"
-Aucun emploi du temps trouvé, merci d'envoyer à " + Me.Mention + @" le lien du ICalendar :
-allez ici : https://dptinfo.iutmetz.univ-lorraine.fr/lna/
-connectez vous
-cliquez sur ""emploi du temps""
-cliquez sur le qr code
-envoyez l'url complète qui s'affiche en message privé, ainsi que votre groupe TP!"));*/
-                            continue;
-                        }
-                        //if we find a difference in the ical (we check the length of the string, which isn't very smart i know) or if we changed week
-                        if (OldICalHash[i] == 0 || OldICalHash[i] != stringICal[i].Length || newWeek)
-                        {
-                            Calendar calendar;
-                            try
-                            {
-                                //we try to parse the ical
-                                calendar = Calendar.Load(stringICal[i]);
-                            }
-                            catch (Exception)
-                            {
-                                //or... we just ignore it
-                                continue;
-                            }
-                            //we search of the messages in the corresponding edt channel
-                            IReadOnlyList<DiscordMessage> messages;
-                            ExecuteAsyncMethod(() => EdtChannel[i].GetMessagesAsync(), out messages);
-                            if (messages != null)
-                            {
-                                foreach (var mess in messages)
-                                {
-                                    //if they come from a bot (me), we just delete them
-                                    if (mess.Author.IsBot)
-                                        ExecuteAsyncMethod(() => EdtChannel[i].DeleteMessageAsync(mess));
-                                }
-                            }
-                            foreach (var ev in calendar.Events)
-                            {
-                                //if we find a day to display, we remove useless informations from the summary
-                                if (week1.Contains(ev.Start.Date) || week2.Contains(ev.Start.Date))
-                                {
-                                    var sb = new StringBuilder();
-                                    var splitted = ev.Summary.Split('-', StringSplitOptions.RemoveEmptyEntries);
-                                    //here we purge the differents informations from spaces
-                                    for (int j = 0; j < splitted.Length; j++)
-                                        splitted[j] = splitted[j].TrimStart().TrimEnd();
-                                    //and we display other informations, such as the matter, the class, the location, ...
-                                    sb.Append(splitted[0] + ", " + splitted[3]);
-                                    //if the type of the course is given (CM/TD/TP)
-                                    if (splitted.Length == 5)
-                                        sb.Append(", " + splitted[4]);
-                                    ev.Summary = sb.ToString();
-                                }
-                            }
-                            var convert = new Converter(calendar);
-                            var stream = new MemoryStream();
-                            convert.ConvertToBitmap(650, week1).Save(stream, System.Drawing.Imaging.ImageFormat.Png);
-                            stream.Seek(0, SeekOrigin.Begin);
-                            var stream2 = new MemoryStream();
-                            convert.ConvertToBitmap(650, week2).Save(stream2, System.Drawing.Imaging.ImageFormat.Png);
-                            stream2.Seek(0, SeekOrigin.Begin);
-                            ExecuteAsyncMethod(() => EdtChannel[i].SendFileAsync(stream, "edtW1.png"));
-                            ExecuteAsyncMethod(() => EdtChannel[i].SendFileAsync(stream2, "edtW2.png"));
-                            //we also save the new length of the ical, to check differences
-                            OldICalHash[i] = stringICal[i].Length;
-                        }
-                    }
-                    LastEdtCheck = DateTime.Now;
-                    SaveData();
-                    Console.WriteLine("Calendars updated");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Here we update the votes/polls
-        /// </summary>
-        /// <returns>void</returns>
-        private static async Task UpdateLists()
-        {
-            for (int i = Votes.Count - 1; i >= 0; i--)
-            {
-                var item = Votes[i];
-                //if the lifitime of the vote has exceeded, we display the results
-                if (item.Message.CreationTimestamp + item.Lifetime < DateTimeOffset.Now)
-                {
-                    Votes.RemoveAt(i);
-                    StringBuilder content = new StringBuilder();
-                    content.Append("**Résultats :** ");
-                    content.Append(item.Message.Content + "\n");
-                    var upvotes = await item.Message.GetReactionsAsync(Upvote);
-                    var downvotes = await item.Message.GetReactionsAsync(Downvote);
-                    if (!item.ShowUsers)
-                    {
-                        //we show the results (i know i have the GetCode() func now, but i'm stupid)
-                        content.Append("<" + Upvote.GetDiscordName() + Upvote.Id + "> : **" + (upvotes.Count - 1).ToString() + "**\n");
-                        content.Append("<" + Downvote.GetDiscordName() + Downvote.Id + "> : **" + (downvotes.Count - 1).ToString() + "**");
-                    }
-                    else
-                    {
-                        //we ping the people that voted if the vote had that parameter
-                        content.Append("<" + Upvote.GetDiscordName() + Upvote.Id + "> : **" + (upvotes.Count - 1).ToString() + "** : ");
-                        bool first = true;
-                        foreach (var user in await item.Message.GetReactionsAsync(Upvote))
-                        {
-                            //let's ping everyone !
-                            if (!user.IsBot)
-                            {
-                                if (!first)
-                                    content.Append(", ");
-                                content.Append(user.Mention);
-                                first = false;
-                            }
-                        }
-                        //same for the downvotes
-                        content.Append("\n<" + Downvote.GetDiscordName() + Downvote.Id + "> : **" + (downvotes.Count - 1).ToString() + "** : ");
-                        first = true;
-                        foreach (var user in await item.Message.GetReactionsAsync(Downvote))
-                        {
-                            if (!user.IsBot)
-                            {
-                                if (!first)
-                                    content.Append(", ");
-                                content.Append(user.Mention);
-                                first = false;
-                            }
-                        }
-                    }
-                    //we send the results
-                    ExecuteAsyncMethod(() => item.Message.Channel.SendMessageAsync(content.ToString()));
-                    //we delete the old vote
-                    await item.Message.DeleteAsync();
-                }
-            }
-            //basically the same thing, but for the polls
-            for (int i = Polls.Count - 1; i >= 0; i--)
-            {
-                var item = Polls[i];
-                if (item.Message.CreationTimestamp + item.Lifetime < DateTimeOffset.Now)
-                {
-                    Polls.RemoveAt(i);
-                    StringBuilder content = new StringBuilder();
-                    content.Append("**Résultats :** ");
-                    content.Append(item.Message.Content + "\n\n");
-                    if (!item.ShowUsers)
-                    {
-                        foreach (var choice in item.Choices)
-                        {
-                            //we look for every reactions possibles
-                            if (choice.Item2.RequireColons)
-                                content.Append("\n<" + choice.Item2.GetDiscordName() + choice.Item2.Id + "> : **" + ((await item.Message.GetReactionsAsync(choice.Item2)).Count - 1).ToString() + "**");
-                            else
-                                content.Append("\n" + choice.Item2.Name + " : **" + ((await item.Message.GetReactionsAsync(choice.Item2)).Count - 1).ToString() + "**");
-                        }
-                    }
-                    else
-                    {
-                        foreach (var choice in item.Choices)
-                        {
-                            var users = await item.Message.GetReactionsAsync(choice.Item2);
-                            if (choice.Item2.RequireColons)
-                                content.Append("\n<" + choice.Item2.GetDiscordName() + choice.Item2.Id + "> : **" + (users.Count - 1).ToString() + "** : ");
-                            else
-                                content.Append("\n" + choice.Item2.Name + " : **" + (users.Count - 1).ToString() + "** : ");
-                            bool first = true;
-                            foreach (var user in users)
-                            {
-                                if (!user.IsBot)
-                                {
-                                    if (!first)
-                                        content.Append(", ");
-                                    first = false;
-                                    content.Append(user.Mention);
-                                }
-                            }
-                        }
-                    }
-                    ExecuteAsyncMethod(() => item.Message.Channel.SendMessageAsync(content.ToString()));
-                    await item.Message.DeleteAsync();
-                }
-            }
-            for (int i = 0; i < Autoruns.Count; i++)
-            {
-                var auto = Autoruns[i];
-                if (auto.baseTime + auto.delay < DateTime.Now)
-                {
-                    //if the autorun has elapsed his cooldown, we post the new vote/poll
-                    auto.baseTime += auto.delay;
-                    Autoruns[i] = auto;
-                    var channel = await Discord.GetChannelAsync(auto.channel);
-                    if (SavedVotes.Any((s) => s.name == auto.name))
-                    {
-                        //if the saved one was a vote
-                        var saved = SavedVotes.Find((s) => s.name == auto.name);
-                        var buff = new byte[8];
-                        Random.NextBytes(buff);
-                        ulong id = BitConverter.ToUInt64(buff);
-                        string content = saved.content + " \n||id:" + id + "||";
-                        DiscordMessage message;
-                        message = await channel.SendMessageAsync(content);
-                        {
-                            await message.CreateReactionAsync(Upvote);
-                            await message.CreateReactionAsync(Downvote);
-                            Votes.Add(new VoteMessage() { Author = auto.author, ID = id, Message = message, Lifetime = saved.duration, ShowUsers = saved.showUsers });
-                            SaveData();
-                        }
-                    }
-                    else if (SavedPolls.Any((s) => s.name == auto.name))
-                    {
-                        //if the saved one was a poll
-                        var saved = SavedPolls.Find((s) => s.name == auto.name);
-                        var buff = new byte[8];
-                        Random.NextBytes(buff);
-                        ulong idPoll = BitConverter.ToUInt64(buff);
-                        var question = saved.content + "\n||id:" + idPoll + "||";
-                        List<Tuple<string, DiscordEmoji>> reactions = new List<Tuple<string, DiscordEmoji>>();
-                        for (int j = 0; j < saved.choices.Length; j++)
-                        {
-                            var choice = saved.choices[j];
-                            reactions.Add(new Tuple<string, DiscordEmoji>(choice.name, GetEmoji(choice.id)));
-                        }
-                        var builder = new StringBuilder();
-                        builder.Append(question + "\n");
-                        foreach (var item in reactions)
-                        {
-                            if (item.Item2.RequireColons)
-                                builder.Append("<" + item.Item2.GetDiscordName() + item.Item2.Id + "> : " + item.Item1 + "\n");
-                            else
-                                builder.Append(item.Item2.Name + " : " + item.Item1 + "\n");
-                        }
-
-                        var message = await channel.SendMessageAsync(builder.ToString());
-                        Polls.Add(new PollMessage()
-                        {
-                            Choices = reactions,
-                            Lifetime = saved.duration,
-                            Message = message,
-                            ShowUsers = saved.showUsers,
-                            Open = saved.open,
-                            Author = auto.author,
-                            ID = idPoll
-                        });
-                        foreach (var item in reactions)
-                            await message.CreateReactionAsync(item.Item2);
-                        SaveData();
-                    }
-                }
-            }
-            SaveData();
         }
 
         #endregion Private Methods
