@@ -54,20 +54,30 @@ namespace Infobot
                                 if (oldMessages.Any())
                                     await channel.DeleteMessagesAsync(oldMessages).ConfigureAwait(false);
                                 {
-                                    var embed = new DiscordEmbedBuilder();
-                                    embed.WithTitle("Emploi du temps semaine en cours")
-                                        .WithImageUrl($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}");
-                                    var sendTask = channel.SendMessageAsync(embed: embed);
-                                    if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false) != sendTask)
-                                        Program.Logger.Warning($"Unable to send the week 1 for {index / 2 + 1}.{1 + index % 2}");
+                                    var getTask = Program.Client.GetAsync($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}");
+                                    if ((await Task.WhenAny(getTask, Task.Delay(Program.Timeout)).ConfigureAwait(false)) == getTask)
+                                    {
+                                        var response = getTask.Result;
+                                        var sendTask = channel.SendMessageAsync(embed: new DiscordEmbedBuilder().WithTitle("Emploi du temps semaine en cours")
+                                        .WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
+                                        if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false) != sendTask)
+                                            Program.Logger.Warning($"Unable to send the week 1 for {index / 2 + 1}.{1 + index % 2}");
+                                    }
+                                    else
+                                        Program.Logger.Warning($"Unable to get the week 1 for {index / 2 + 1}.{1 + index % 2}");
                                 }
                                 {
-                                    var embed = new DiscordEmbedBuilder();
-                                    embed.WithTitle("Emploi du temps semaine prochaine")
-                                        .WithImageUrl($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}&offset=1");
-                                    var sendTask = channel.SendMessageAsync(embed: embed);
-                                    if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false) != sendTask)
-                                        Program.Logger.Warning($"Unable to send the week 2 for {index / 2 + 1}.{1 + index % 2}");
+                                    var getTask = Program.Client.GetAsync($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}&offset=1");
+                                    if ((await Task.WhenAny(getTask, Task.Delay(Program.Timeout)).ConfigureAwait(false)) == getTask)
+                                    {
+                                        var response = getTask.Result;
+                                        var sendTask = channel.SendMessageAsync(embed: new DiscordEmbedBuilder().WithTitle("Emploi du temps semaine prochaine")
+                                        .WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
+                                        if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false) != sendTask)
+                                            Program.Logger.Warning($"Unable to send the week 2 for {index / 2 + 1}.{1 + index % 2}");
+                                    }
+                                    else
+                                        Program.Logger.Warning($"Unable to get the week 2 for {index / 2 + 1}.{1 + index % 2}");
                                 }
                             }
                             else

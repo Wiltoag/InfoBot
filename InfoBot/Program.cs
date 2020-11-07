@@ -336,7 +336,10 @@ namespace Infobot
             Timeout = TimeSpan.FromSeconds(15);
             registeredCommands = new LinkedList<ICommand>();
             Settings.CurrentSettings = SettingsManager.MostRecent;
-            Client = new HttpClient();
+            Client = new HttpClient(new HttpClientHandler()
+            {
+                AllowAutoRedirect = false
+            });
             try
             {
                 using (var sr = new StreamReader("token.txt"))
