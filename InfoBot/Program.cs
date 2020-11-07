@@ -380,7 +380,8 @@ namespace Infobot
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
 
-        public static bool IsAdmin(this DiscordMember member) => member.Roles.Any(r => r.CheckPermission(Permissions.Administrator) == PermissionLevel.Allowed);
+        public static bool IsAdmin(this DiscordMember member)
+            => member.IsOwner || member.Roles.Any(r => r.CheckPermission(Permissions.Administrator) == PermissionLevel.Allowed);
 
         private static async Task MessageCreated(MessageCreateEventArgs e)
         {
