@@ -3,12 +3,21 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
+using System.Timers;
 
 namespace Infobot
 {
     internal static class SettingsManager
     {
+        #region Private Fields
+
+        private static Timer timer;
+
+        #endregion Private Fields
+
         #region Public Properties
 
         public static Settings MostRecent
@@ -16,8 +25,8 @@ namespace Infobot
             get
             {
                 Directory.CreateDirectory("settings");
-                var files = new SortedSet<string>(Directory.GetFiles("settings"), ReverseComparer<string>.Reverse(StringComparer.CurrentCulture));
-                if (files.Count == 0)
+                var files = Directory.GetFiles("settings").OrderByDescending(f => f, StringComparer.CurrentCulture);
+                if (!files.Any())
                 {
                     Program.Logger.Warning($"No settings found");
                     return Settings.Default;
@@ -62,6 +71,29 @@ namespace Infobot
             catch (UnauthorizedAccessException e)
             {
                 Program.Logger.Warning($"Unable to save settings to '{path}' : {e.Message}");
+            }
+        }
+
+        public static void Setup()
+        {
+            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
+            timer.AutoReset = true;
+            timer.Enabled = true;
+            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
+            _ = Update();
+        }
+
+        public static async Task Update()
+        {
+            Directory.CreateDirectory("settings");
+            if (Directory.GetFiles("settings").Length > 25)
+            {
+                Program.Logger.Info("Deleting last files");
+                await Task.WhenAll(Directory.GetFiles("settings")
+                    .OrderByDescending(file => file, StringComparer.CurrentCulture)
+                    .Skip(25)
+                    .Select(async file => await Task.Run(() => File.Delete(file)).ConfigureAwait(false))
+                    ).ContinueWith((t) => Program.Logger.Info("Files deleted"));
             }
         }
 

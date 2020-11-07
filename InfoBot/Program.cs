@@ -350,6 +350,7 @@ namespace Infobot
             }
             Connect();
             Discord.MessageCreated += MessageCreated;
+            SettingsManager.Setup();
             UpdateTimetable.Setup();
             await Task.Delay(-1);
         }
