@@ -14,11 +14,12 @@ using Newtonsoft.Json;
 
 namespace Infobot
 {
-    internal partial class Program
+    internal static class Program
     {
         #region Private Fields
 
         private static string token;
+        public static ICollection<ICommand> registeredCommands { get; private set; }
 
         #endregion Private Fields
 
@@ -332,6 +333,7 @@ namespace Infobot
         {
             Logger = new Log();
             Timeout = TimeSpan.FromSeconds(15);
+            registeredCommands = new LinkedList<ICommand>();
             Settings.CurrentSettings = SettingsManager.MostRecent;
             Client = new HttpClient();
             try
@@ -377,8 +379,50 @@ namespace Infobot
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
         }
 
+        public static bool IsAdmin(this DiscordMember member) => member.Roles.Any(r => r.CheckPermission(Permissions.Administrator) == PermissionLevel.Allowed);
+
         private static async Task MessageCreated(MessageCreateEventArgs e)
         {
+            if (e.Message.Content.StartsWith(Settings.CurrentSettings.commandIdentifier))
+            {
+                var content = e.Message.Content.Substring(Settings.CurrentSettings.commandIdentifier.Length);
+                var args = new LinkedList<string>();
+                var quoted = false;
+                var currArg = "";
+                foreach (var c in content)
+                {
+                    if (c == ' ' && !quoted)
+                    {
+                        if (currArg.Length > 0)
+                        {
+                            args.AddLast(currArg);
+                            currArg = "";
+                        }
+                    }
+                    else if (c == '"')
+                        quoted = !quoted;
+                    else
+                        currArg += c;
+                }
+                if (currArg.Length > 0)
+                    args.AddLast(currArg);
+                await Task.WhenAll(
+                                registeredCommands
+                                .Where(command => command.Key.ToLower() == args.First.Value.ToLower())
+                                .Select(async command =>
+                                {
+                                    if (!command.Admin || (await DUTInfoServer.GetMemberAsync(e.Author.Id).ConfigureAwait(false)).IsAdmin())
+                                    {
+                                        Logger.Info($"{command.Key} called by {e.Author.Username}");
+                                        await command.Handle(e, args.Where((s, i) => i > 0)).ConfigureAwait(false);
+                                    }
+                                    else
+                                    {
+                                        Logger.Warning($"{command.Key} canceled for {e.Author.Username} : no admin rights");
+                                        await e.Message.RespondAsync("You have to be admin to call this command.");
+                                    }
+                                }));
+            }
         }
 
         #endregion Private Methods

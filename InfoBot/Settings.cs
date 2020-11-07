@@ -9,6 +9,7 @@ namespace Infobot
         #region Public Fields
 
         public static Settings CurrentSettings;
+        public string commandIdentifier;
         public int[] oldHash;
         public TimeSpan? timetableDelay;
         public string[] timetableUrls;
@@ -25,6 +26,7 @@ namespace Infobot
                 result.oldHash = new int[] { 0, 0, 0, 0, 0, 0 };
                 result.timetableUrls = new string[] { "", "", "", "", "", "" };
                 result.timetableDelay = TimeSpan.FromHours(2);
+                result.commandIdentifier = "$";
                 return result;
             }
         }
@@ -50,6 +52,11 @@ namespace Infobot
             {
                 Program.Logger.Warning("Missing Settings.timetableDelay");
                 timetableDelay = defaultSettings.timetableDelay;
+            }
+            if (commandIdentifier == null)
+            {
+                Program.Logger.Warning("Missing Settings.commandIdentifier");
+                commandIdentifier = defaultSettings.commandIdentifier;
             }
         }
 
