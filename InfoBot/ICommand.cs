@@ -12,6 +12,7 @@ namespace Infobot
 
         bool Admin { get; }
         string Key { get; }
+        string Summary { get; }
 
         #endregion Public Properties
 

@@ -17,6 +17,8 @@ namespace Infobot
 
         public string Key => "padoru";
 
+        public string Summary => "Displays the remaining number of days until Christmas";
+
         #endregion Public Properties
 
         #region Public Methods
