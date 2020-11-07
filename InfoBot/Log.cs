@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows.Markup;
 
 namespace Infobot
 {
@@ -64,14 +65,31 @@ namespace Infobot
                 2 => "ERROR",
                 _ => default
             };
-            Console.ForegroundColor = ConsoleColor.Gray;
+            Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} ");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write('[');
             Console.ForegroundColor = customColor;
             Console.Write(code);
             Console.ForegroundColor = ConsoleColor.White;
-            Console.WriteLine($"] {value}");
+            Console.Write("] ");
+            bool quoted = false;
+            foreach (var str in value.Split('\'', StringSplitOptions.None))
+            {
+                if (quoted)
+                    Console.Write($"'{str}'");
+                else
+                    Console.Write(str);
+                quoted = !quoted;
+                Console.ForegroundColor = Console.ForegroundColor switch
+                {
+                    ConsoleColor.White => ConsoleColor.Gray,
+                    ConsoleColor.Gray => ConsoleColor.White,
+                    _ => default
+                };
+            }
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.WriteLine();
             logfile.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} [{code}] {value}");
             logfile.Flush();
             mutex.ReleaseMutex();
