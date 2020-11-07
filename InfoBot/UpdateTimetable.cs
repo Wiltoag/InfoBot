@@ -23,7 +23,7 @@ namespace Infobot
             timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
             timer.AutoReset = true;
             timer.Enabled = true;
-            timer.Elapsed += (sender, e) => Update();
+            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
             _ = Update();
         }
 
