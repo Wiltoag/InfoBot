@@ -327,11 +327,6 @@ namespace Infobot
             return newStr;
         }
 
-        /// <summary>
-        /// Main func, but async
-        /// </summary>
-        /// <param name="args">arguments</param>
-        /// <returns>void</returns>
         private static void Main(string[] args)
         {
             Logger = new Log();
