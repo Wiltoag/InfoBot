@@ -132,7 +132,7 @@ namespace Infobot
 
         private static async Task MessageCreated(MessageCreateEventArgs e)
         {
-            if (e.Message.Content.StartsWith(Settings.CurrentSettings.commandIdentifier) && !e.Channel.IsPrivate)
+            if (!e.Author.IsCurrent && !e.Channel.IsPrivate && e.Message.Content.StartsWith(Settings.CurrentSettings.commandIdentifier))
             {
                 var content = e.Message.Content.Substring(Settings.CurrentSettings.commandIdentifier.Length);
                 var args = new LinkedList<string>();
@@ -155,22 +155,28 @@ namespace Infobot
                 }
                 if (currArg.Length > 0)
                     args.AddLast(currArg);
-                await Task.WhenAll(
-                                registeredCommands
-                                .Where(command => command.Key.ToLower() == args.First.Value.ToLower())
-                                .Select(async command =>
-                                {
-                                    if (!command.Admin || (await DUTInfoServer.GetMemberAsync(e.Author.Id).ConfigureAwait(false)).IsAdmin())
-                                    {
-                                        Logger.Info($"{command.Key} called by {e.Author.Username}");
-                                        await command.Handle(e, args.Where((s, i) => i > 0)).ConfigureAwait(false);
-                                    }
-                                    else
-                                    {
-                                        Logger.Warning($"{command.Key} canceled for {e.Author.Username} : no admin rights");
-                                        await e.Message.RespondAsync("You have to be admin to call this command.");
-                                    }
-                                }));
+                var commands = registeredCommands
+                                .Where(command => command.Key.ToLower() == args.First.Value.ToLower());
+                if (commands.Any())
+                    foreach (var command in commands)
+                    {
+                        var memberTask = DUTInfoServer.GetMemberAsync(e.Author.Id);
+                        if ((await Task.WhenAny(memberTask, Task.Delay(Timeout)).ConfigureAwait(false)) == memberTask && memberTask.IsCompletedSuccessfully)
+                            if (!command.Admin || memberTask.Result.IsAdmin())
+                            {
+                                Logger.Info($"{command.Key} called by {e.Author.Username}");
+                                await command.Handle(e, args.Where((s, i) => i > 0));
+                            }
+                            else
+                            {
+                                Logger.Warning($"{command.Key} canceled for {e.Author.Username} : no admin rights");
+                                await e.Message.RespondAsync("You have to be admin to call this command.").ConfigureAwait(false);
+                            }
+                        else
+                            Logger.Warning($"Unable to find member rights");
+                    }
+                else
+                    await e.Message.RespondAsync($"Unknown command, type `{Settings.CurrentSettings.commandIdentifier}help` for more informations").ConfigureAwait(false);
             }
         }
 
