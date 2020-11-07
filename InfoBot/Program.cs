@@ -352,6 +352,7 @@ namespace Infobot
             Discord.MessageCreated += MessageCreated;
             SettingsManager.Setup();
             UpdateTimetable.Setup();
+            registeredCommands.Add(new Padoru());
             await Task.Delay(-1);
         }
 
