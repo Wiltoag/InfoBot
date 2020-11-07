@@ -47,11 +47,6 @@ namespace Infobot
         /// </summary>
         public static DiscordGuild DUTInfoServer { get; private set; }
 
-        /// <summary>
-        /// list of 6 edt channels, sorted by their group
-        /// </summary>
-        public static DiscordChannel[] EdtChannel { get; private set; }
-
         public static Log Logger { get; private set; }
 
         /// <summary>
@@ -81,7 +76,7 @@ namespace Infobot
 #else
                 var task = Discord.GetGuildAsync(619513574850560010);
 #endif
-                if (task.Wait(Timeout))
+                if (task.Wait(Timeout) && task.IsCompletedSuccessfully)
                 {
                     DUTInfoServer = task.Result;
                     Logger.Info($"Connected to '{DUTInfoServer.Name}'");
@@ -99,91 +94,6 @@ namespace Infobot
             Sharing = DUTInfoServer.Emojis.FirstOrDefault((e) => e.Name == "partage");
             if (Sharing == null)
                 Logger.Warning("Sharing emote not found");
-            EdtChannel = new DiscordChannel[6];
-            {
-#if DEBUG
-                var task = Discord.GetChannelAsync(437704877221609474);
-#else
-                var task = Discord.GetChannelAsync(623557669810077697);
-#endif
-                if (task.Wait(Timeout))
-                {
-                    EdtChannel[0] = task.Result;
-                    Logger.Info($"'{task.Result.Name}' found");
-                }
-                else
-                    Logger.Warning("Unable to find EdtChannel 1.1");
-            }
-            {
-#if DEBUG
-                var task = Discord.GetChannelAsync(437704877221609474);
-#else
-                var task = Discord.GetChannelAsync(623557699497623602);
-#endif
-                if (task.Wait(Timeout))
-                {
-                    EdtChannel[1] = task.Result;
-                    Logger.Info($"'{task.Result.Name}' found");
-                }
-                else
-                    Logger.Warning("Unable to find EdtChannel 1.2");
-            }
-            {
-#if DEBUG
-                var task = Discord.GetChannelAsync(437704877221609474);
-#else
-                var task = Discord.GetChannelAsync(623557716694138890);
-#endif
-                if (task.Wait(Timeout))
-                {
-                    EdtChannel[2] = task.Result;
-                    Logger.Info($"'{task.Result.Name}' found");
-                }
-                else
-                    Logger.Warning("Unable to find EdtChannel 2.1");
-            }
-            {
-#if DEBUG
-                var task = Discord.GetChannelAsync(437704877221609474);
-#else
-                var task = Discord.GetChannelAsync(623557732930289664);
-#endif
-                if (task.Wait(Timeout))
-                {
-                    EdtChannel[3] = task.Result;
-                    Logger.Info($"'{task.Result.Name}' found");
-                }
-                else
-                    Logger.Warning("Unable to find EdtChannel 2.2");
-            }
-            {
-#if DEBUG
-                var task = Discord.GetChannelAsync(437704877221609474);
-#else
-                var task = Discord.GetChannelAsync(623557762101542923);
-#endif
-                if (task.Wait(Timeout))
-                {
-                    EdtChannel[4] = task.Result;
-                    Logger.Info($"'{task.Result.Name}' found");
-                }
-                else
-                    Logger.Warning("Unable to find EdtChannel 3.1");
-            }
-            {
-#if DEBUG
-                var task = Discord.GetChannelAsync(437704877221609474);
-#else
-                var task = Discord.GetChannelAsync(623557780527382530);
-#endif
-                if (task.Wait(Timeout))
-                {
-                    EdtChannel[5] = task.Result;
-                    Logger.Info($"'{task.Result.Name}' found");
-                }
-                else
-                    Logger.Warning("Unable to find EdtChannel 3.2");
-            }
         }
 
         #endregion Public Methods

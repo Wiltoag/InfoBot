@@ -26,12 +26,12 @@ namespace Infobot
         public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> args)
         {
             var getTask = Program.Client.GetAsync($"{Program.WildgoatApi}/padoru.php");
-            if ((await Task.WhenAny(getTask, Task.Delay(Program.Timeout)).ConfigureAwait(false)) == getTask)
+            if ((await Task.WhenAny(getTask, Task.Delay(Program.Timeout)).ConfigureAwait(false)) == getTask && getTask.IsCompletedSuccessfully)
             {
                 var response = getTask.Result;
                 var sendTask = ev.Message.RespondAsync(
                   embed: new DiscordEmbedBuilder().WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
-                if ((await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != sendTask)
+                if ((await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != sendTask || !sendTask.IsCompletedSuccessfully)
                     Program.Logger.Warning("Unable to send Padoru");
             }
             else

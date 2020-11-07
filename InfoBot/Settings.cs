@@ -12,6 +12,7 @@ namespace Infobot
         public string commandIdentifier;
         public int[] oldHash;
         public string status;
+        public ulong[] timetableChannels;
         public TimeSpan? timetableDelay;
         public string[] timetableUrls;
 
@@ -26,6 +27,7 @@ namespace Infobot
                 var result = new Settings();
                 result.oldHash = new int[] { 0, 0, 0, 0, 0, 0 };
                 result.timetableUrls = new string[] { "", "", "", "", "", "" };
+                result.timetableChannels = new ulong[] { 0, 0, 0, 0, 0, 0 };
                 result.timetableDelay = TimeSpan.FromHours(2);
                 result.commandIdentifier = "$";
                 result.status = $"{result.commandIdentifier}help";
@@ -64,6 +66,11 @@ namespace Infobot
             {
                 Program.Logger.Warning("Missing Settings.status");
                 status = defaultSettings.status;
+            }
+            if (timetableChannels == null)
+            {
+                Program.Logger.Warning("Missing Settings.timetableChannels");
+                timetableChannels = defaultSettings.timetableChannels;
             }
         }
 
