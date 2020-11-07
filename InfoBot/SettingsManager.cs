@@ -34,7 +34,7 @@ namespace Infobot
                         }
                         catch (JsonReaderException)
                         {
-                            Program.Logger.Warning($"Corrupted file '{file}'");
+                            Program.Logger.Error($"Corrupted file '{file}'");
                         }
                     Program.Logger.Warning($"No settings found");
                     return Settings.Default;
