@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DSharpPlus.Entities;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -53,12 +54,18 @@ namespace Infobot
                                 if (oldMessages.Any())
                                     await channel.DeleteMessagesAsync(oldMessages).ConfigureAwait(false);
                                 {
-                                    var sendTask = channel.SendMessageAsync($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}");
+                                    var embed = new DiscordEmbedBuilder();
+                                    embed.WithTitle("Emploi du temps semaine en cours")
+                                        .WithImageUrl($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}");
+                                    var sendTask = channel.SendMessageAsync(embed: embed);
                                     if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false) != sendTask)
                                         Program.Logger.Warning($"Unable to send the week 1 for {index / 2 + 1}.{1 + index % 2}");
                                 }
                                 {
-                                    var sendTask = channel.SendMessageAsync($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}&offset=1");
+                                    var embed = new DiscordEmbedBuilder();
+                                    embed.WithTitle("Emploi du temps semaine prochaine")
+                                        .WithImageUrl($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}&offset=1");
+                                    var sendTask = channel.SendMessageAsync(embed: embed);
                                     if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)).ConfigureAwait(false) != sendTask)
                                         Program.Logger.Warning($"Unable to send the week 2 for {index / 2 + 1}.{1 + index % 2}");
                                 }
