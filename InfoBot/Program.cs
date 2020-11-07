@@ -91,7 +91,7 @@ namespace Infobot
                     Environment.Exit(0);
                 }
             }
-            if (Discord.UpdateStatusAsync(new DiscordGame(">ib help")).Wait(Timeout))
+            if (Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status)).Wait(Timeout))
                 Logger.Info("Status set");
             else
                 Logger.Warning("Unable to set status");
