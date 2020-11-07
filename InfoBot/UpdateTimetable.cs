@@ -64,7 +64,7 @@ namespace Infobot
                                 }
                             }
                             else
-                                Program.Logger.Info($"No difference detected for {index / 2 + 1}.{1 + index % 2}");
+                                Program.Logger.Info($"No differences detected for {index / 2 + 1}.{1 + index % 2}");
                         }
                         else
                             Program.Logger.Warning("Unable to get the JSON");
