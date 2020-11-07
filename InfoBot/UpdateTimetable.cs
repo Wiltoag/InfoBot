@@ -45,7 +45,7 @@ namespace Infobot
                         if (await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false) == task)
                         {
                             json = task.Result;
-                            var newHash = Program.GetSimplifiedString(json).Length;
+                            var newHash = Utilities.GetSimplifiedString(json).Length;
                             if (newHash != oldHash)
                             {
                                 Settings.CurrentSettings.oldHash[index] = newHash;
