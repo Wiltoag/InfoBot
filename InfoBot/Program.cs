@@ -26,7 +26,8 @@ namespace Infobot
         #region Public Properties
 
 #if DEBUG
-        public static string WildgoatApi => "http://localhost/Wildgoat_API/api";
+        public static string WildgoatApi => "http://wildgoat.fr/api";
+        //public static string WildgoatApi => "http://localhost/Wildgoat_API/api";
 #else
         public static string WildgoatApi => "http://wildgoat.fr/api";
 #endif
