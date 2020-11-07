@@ -385,7 +385,7 @@ namespace Infobot
 
         private static async Task MessageCreated(MessageCreateEventArgs e)
         {
-            if (e.Message.Content.StartsWith(Settings.CurrentSettings.commandIdentifier))
+            if (e.Message.Content.StartsWith(Settings.CurrentSettings.commandIdentifier) && !e.Channel.IsPrivate)
             {
                 var content = e.Message.Content.Substring(Settings.CurrentSettings.commandIdentifier.Length);
                 var args = new LinkedList<string>();
