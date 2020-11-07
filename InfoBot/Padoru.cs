@@ -1,4 +1,5 @@
-﻿using DSharpPlus.EventArgs;
+﻿using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -19,10 +20,8 @@ namespace Infobot
         #region Public Methods
 
         public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> args)
-
-            => await ev.Message.RespondWithFileAsync(
-                await Program.Client.GetStreamAsync($"{Program.WildgoatApi}/padoru.php").ConfigureAwait(false),
-                "padoru.jpeg").ConfigureAwait(false);
+            => await ev.Message.RespondAsync(
+                embed: new DiscordEmbedBuilder().WithImageUrl($"{Program.WildgoatApi}/padoru.php")).ConfigureAwait(false);
 
         #endregion Public Methods
     }
