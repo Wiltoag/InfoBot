@@ -29,6 +29,7 @@ namespace Infobot
                         {
                             var settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText(file));
                             Program.Logger.Info($"Settings '{file}' loaded");
+                            settings.CheckIntegrity();
                             return settings;
                         }
                         catch (JsonReaderException)

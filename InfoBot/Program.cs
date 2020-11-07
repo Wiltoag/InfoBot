@@ -30,11 +30,6 @@ namespace Infobot
 #endif
 
         /// <summary>
-        /// List of urls to the ical sorted by their group
-        /// </summary>
-        public static string[] CalendarUrl { get; private set; }
-
-        /// <summary>
         /// Global HTTP client
         /// </summary>
         public static HttpClient Client { get; private set; }
@@ -342,13 +337,6 @@ namespace Infobot
             Logger = new Log();
             Timeout = TimeSpan.FromSeconds(15);
             Settings.CurrentSettings = SettingsManager.MostRecent;
-            CalendarUrl = new string[6];
-            CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=6df29a513001813"; //1.1
-            CalendarUrl[1] = ""; //1.2
-            CalendarUrl[2] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=98f565239e01830"; //2.1
-            CalendarUrl[3] = ""; //2.2
-            CalendarUrl[4] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=4352c5485001785"; //3.1
-            CalendarUrl[5] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=1c57595e2401824"; //3.2
             Client = new HttpClient();
             try
             {

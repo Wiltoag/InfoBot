@@ -14,7 +14,7 @@ namespace Infobot
         public static async Task Update()
         {
             string regex = Uri.EscapeDataString("/^(.*) - .* - .* - .*$/");
-            await Task.WhenAll(Program.CalendarUrl.Select(async (url, index) =>
+            await Task.WhenAll(Settings.CurrentSettings.timeTableUrls.Select(async (url, index) =>
             {
                 if (url.Length > 0)
                 {
@@ -54,6 +54,8 @@ namespace Infobot
                             Program.Logger.Warning("Unable to get the JSON");
                     }
                 }
+                else
+                    Program.Logger.Warning($"No url provided for {index / 2 + 1}.{1 + index % 2}");
             }));
             Program.Logger.Info("Timetables updated");
             SettingsManager.Save(Settings.CurrentSettings);
