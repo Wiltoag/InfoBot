@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Infobot
@@ -12,12 +13,15 @@ namespace Infobot
 
         private StreamWriter logfile;
 
+        private Mutex mutex;
+
         #endregion Private Fields
 
         #region Public Constructors
 
         public Log()
         {
+            mutex = new Mutex(false);
             Directory.CreateDirectory("logs");
             logfile = new StreamWriter(new MultiStream(
                 new FileStream("latest.log", FileMode.Create, FileAccess.Write, FileShare.Read),
@@ -45,6 +49,7 @@ namespace Infobot
 
         private void Write(string value, int info)
         {
+            mutex.WaitOne();
             var customColor = info switch
             {
                 0 => ConsoleColor.Blue,
@@ -69,6 +74,7 @@ namespace Infobot
             Console.WriteLine($"] {value}");
             logfile.WriteLine($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} [{code}] {value}");
             logfile.Flush();
+            mutex.ReleaseMutex();
         }
 
         #endregion Private Methods

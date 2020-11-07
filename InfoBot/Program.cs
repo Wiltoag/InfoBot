@@ -9,10 +9,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
-using Infobot;
 using Newtonsoft.Json;
 
-namespace InfoBot
+namespace Infobot
 {
     internal partial class Program
     {
@@ -263,7 +262,7 @@ namespace InfoBot
         /// <param name="content">String that contains eventually the origin</param>
         /// <param name="origin">String to search for</param>
         /// <returns>value from 0 to 1</returns>
-        private static double EvaluateWholeStringSimilarity(string content, string origin)
+        public static double EvaluateWholeStringSimilarity(string content, string origin)
         {
             //we automatically simplify the strings
             content = GetSimplifiedString(content);
@@ -284,7 +283,7 @@ namespace InfoBot
         /// </summary>
         /// <param name="emoji">emoji object</param>
         /// <returns>coded string</returns>
-        private static string GetCode(DiscordEmoji emoji)
+        public static string GetCode(DiscordEmoji emoji)
         {
             if (emoji.RequireColons)
                 //if the emoji is custom
@@ -299,7 +298,7 @@ namespace InfoBot
         /// </summary>
         /// <param name="code">coded string</param>
         /// <returns>emoji object</returns>
-        private static DiscordEmoji GetEmoji(string code)
+        public static DiscordEmoji GetEmoji(string code)
         {
             DiscordEmoji emoji;
             try
@@ -321,7 +320,7 @@ namespace InfoBot
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
-        private static string GetSimplifiedString(string str)
+        public static string GetSimplifiedString(string str)
         {
             str = RemoveDiacritics(str).ToLower();
             var newStr = "";
@@ -342,7 +341,7 @@ namespace InfoBot
         {
             Logger = new Log();
             Timeout = TimeSpan.FromSeconds(15);
-            //now we initiate the ical
+            Settings.CurrentSettings = SettingsManager.MostRecent;
             CalendarUrl = new string[6];
             CalendarUrl[0] = "https://dptinfo.iutmetz.univ-lorraine.fr/lna/agendas/ical.php?ical=6df29a513001813"; //1.1
             CalendarUrl[1] = ""; //1.2
@@ -364,60 +363,7 @@ namespace InfoBot
                 Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
             }
             Connect();
-        }
-
-        /// <summary>
-        /// Parse a command-like string
-        /// </summary>
-        /// <param name="input">command-like string</param>
-        /// <param name="command">name of the command (first word)</param>
-        /// <param name="args">arguments to that command (every other words/strings after the command)</param>
-        private static void ParseInput(string input, out string command, out string[] args)
-        {
-            command = "";
-            var listArgs = new List<string>();
-            int index = 0;
-            while (index < input.Length)
-            {
-                //we extract the first word
-                var currChar = input[index];
-                if (currChar == ' ')
-                    break;
-                else
-                    command += currChar;
-                index++;
-            }
-            index++;
-            var currArg = "";
-            bool ignoreSpaces = false;
-            while (index < input.Length)
-            {
-                var currChar = input[index];
-                //if we have to escape a character
-                if (currChar == '\\' && input.Length > index + 1)
-                {
-                    currChar = input[++index];
-                    currArg += currChar;
-                }
-                //if we got a blank space, we have to go to the other argument (unless we are in a string)
-                else if (currChar == ' ' && !ignoreSpaces)
-                {
-                    if (currArg.Length > 0)
-                        listArgs.Add(currArg);
-                    currArg = "";
-                }
-                //we enter a string, we have to ignore spaces til the end of this string
-                else if (currChar == '"')
-                    ignoreSpaces = !ignoreSpaces;
-                else
-                    //otherwise, we just add the current char to the current argument
-                    currArg += currChar;
-                index++;
-            }
-            //if the last current argument is valid, we don't forget to add him too
-            if (currArg.Length > 0)
-                listArgs.Add(currArg);
-            args = listArgs.ToArray();
+            UpdateTimetable.Update().Wait();
         }
 
         /// <summary>
