@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using DSharpPlus;
 using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using Newtonsoft.Json;
 
 namespace Infobot
@@ -327,7 +328,7 @@ namespace Infobot
             return newStr;
         }
 
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             Logger = new Log();
             Timeout = TimeSpan.FromSeconds(15);
@@ -346,7 +347,9 @@ namespace Infobot
                 Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
             }
             Connect();
-            UpdateTimetable.Update().Wait();
+            Discord.MessageCreated += MessageCreated;
+            UpdateTimetable.Setup();
+            await Task.Delay(-1);
         }
 
         /// <summary>
@@ -372,6 +375,10 @@ namespace Infobot
             }
 
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC);
+        }
+
+        private static async Task MessageCreated(MessageCreateEventArgs e)
+        {
         }
 
         #endregion Private Methods

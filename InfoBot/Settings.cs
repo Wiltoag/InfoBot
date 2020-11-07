@@ -10,7 +10,8 @@ namespace Infobot
 
         public static Settings CurrentSettings;
         public int[] oldHash;
-        public string[] timeTableUrls;
+        public TimeSpan? timetableDelay;
+        public string[] timetableUrls;
 
         #endregion Public Fields
 
@@ -22,7 +23,8 @@ namespace Infobot
             {
                 var result = new Settings();
                 result.oldHash = new int[] { 0, 0, 0, 0, 0, 0 };
-                result.timeTableUrls = new string[] { "", "", "", "", "", "" };
+                result.timetableUrls = new string[] { "", "", "", "", "", "" };
+                result.timetableDelay = TimeSpan.FromHours(2);
                 return result;
             }
         }
@@ -33,15 +35,21 @@ namespace Infobot
 
         public void CheckIntegrity()
         {
+            var defaultSettings = Default;
             if (oldHash == null)
             {
                 Program.Logger.Warning("Missing Settings.oldHash");
-                oldHash = new int[] { 0, 0, 0, 0, 0, 0 };
+                oldHash = defaultSettings.oldHash;
             }
-            if (timeTableUrls == null)
+            if (timetableUrls == null)
             {
                 Program.Logger.Warning("Missing Settings.timeTableUrls");
-                timeTableUrls = new string[] { "", "", "", "", "", "" };
+                timetableUrls = defaultSettings.timetableUrls;
+            }
+            if (timetableDelay == null)
+            {
+                Program.Logger.Warning("Missing Settings.timetableDelay");
+                timetableDelay = defaultSettings.timetableDelay;
             }
         }
 
