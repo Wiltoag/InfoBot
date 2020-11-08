@@ -166,12 +166,12 @@ namespace Infobot
                         if ((await Task.WhenAny(memberTask, Task.Delay(Timeout)).ConfigureAwait(false)) == memberTask && memberTask.IsCompletedSuccessfully)
                             if (!command.Admin || memberTask.Result.IsAdmin())
                             {
-                                Logger.Info($"{command.Key} called by {e.Author.Username}");
+                                Logger.Info($"'{command.Key}' called by '{e.Author.Username}'");
                                 await command.Handle(e, args.Where((s, i) => i > 0));
                             }
                             else
                             {
-                                Logger.Warning($"{command.Key} canceled for {e.Author.Username} : no admin rights");
+                                Logger.Warning($"'{command.Key}' canceled for '{e.Author.Username}' : no admin rights");
                                 await e.Message.RespondAsync("You have to be admin to call this command.").ConfigureAwait(false);
                             }
                         else

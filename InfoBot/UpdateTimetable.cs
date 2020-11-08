@@ -129,7 +129,10 @@ namespace Infobot
 
         public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> args)
         {
+            var task = ev.Message.RespondAsync("Updating timetables");
             await Update();
+            if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompleted)
+                Program.Logger.Warning("Unable to respond");
         }
 
         #endregion Public Methods
