@@ -44,6 +44,30 @@ namespace Infobot
         }
 
         /// <summary>
+        /// Call a function for every item
+        /// </summary>
+        /// <typeparam name="T">type of the items</typeparam>
+        /// <param name="list">list of the items</param>
+        /// <param name="call">function to call</param>
+        public static void ForEach<T>(this IEnumerable<T> list, Action<T> call) => ForEach(list, (item, index) => call(item));
+
+        /// <summary>
+        /// Call a function for every item
+        /// </summary>
+        /// <typeparam name="T">type of the items</typeparam>
+        /// <param name="list">list of the items</param>
+        /// <param name="call">function to call</param>
+        public static void ForEach<T>(this IEnumerable<T> list, Action<T, int> call)
+        {
+            var index = 0;
+            foreach (var item in list)
+            {
+                call(item, index);
+                ++index;
+            }
+        }
+
+        /// <summary>
         /// Get the string implementation of an emoji, regardless of its origin
         /// </summary>
         /// <param name="emoji">emoji object</param>

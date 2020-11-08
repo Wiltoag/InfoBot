@@ -127,6 +127,7 @@ namespace Infobot
             SettingsManager.Setup();
             UpdateTimetable.Setup();
             registeredCommands.Add(new Padoru());
+            registeredCommands.Add(new Help());
             await Task.Delay(-1);
         }
 
@@ -176,7 +177,7 @@ namespace Infobot
                             Logger.Warning($"Unable to find member rights");
                     }
                 else
-                    await e.Message.RespondAsync($"Unknown command, type `{Settings.CurrentSettings.commandIdentifier}help` for more informations").ConfigureAwait(false);
+                    await e.Message.RespondAsync($"Unknown command `{args.First.Value}`, type `{Settings.CurrentSettings.commandIdentifier}help` for more informations").ConfigureAwait(false);
             }
         }
 

@@ -15,6 +15,7 @@ namespace Infobot
 
         public bool Admin => false;
 
+        public IEnumerable<(string, string)> Detail => null;
         public string Key => "padoru";
 
         public string Summary => "Displays the remaining number of days until Christmas";

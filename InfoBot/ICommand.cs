@@ -11,6 +11,7 @@ namespace Infobot
         #region Public Properties
 
         bool Admin { get; }
+        IEnumerable<(string, string)> Detail { get; }
         string Key { get; }
         string Summary { get; }
 
