@@ -43,13 +43,12 @@ namespace Infobot
                     var jsonRequest = $"{Program.WildgoatApi}/ical-json.php?url={Uri.EscapeDataString(url)}&weeks=2";
                     Program.Logger.Info($"Updating {index / 2 + 1}.{1 + index % 2} timetable");
                     Program.Logger.Info($"Requesting '{jsonRequest}'");
-                    string json;
                     {
                         var task = Program.Client.GetStringAsync(jsonRequest);
                         if (await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false) == task && task.IsCompletedSuccessfully)
                         {
-                            json = task.Result;
-                            var newHash = Utilities.GetSimplifiedString(json).Length;
+                            dynamic json = Newtonsoft.Json.JsonConvert.DeserializeObject(task.Result);
+                            int newHash = json.code;
                             if (newHash != oldHash)
                             {
                                 var channelTask = Program.Discord.GetChannelAsync(Settings.CurrentSettings.timetableChannels[index]);
