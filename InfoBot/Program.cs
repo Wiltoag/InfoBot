@@ -62,10 +62,6 @@ namespace Infobot
                 Logger.Error($"Failed to connect to Discord");
                 Environment.Exit(0);
             }
-            if (Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status)).Wait(Timeout))
-                Logger.Info("Status set");
-            else
-                Logger.Warning("Unable to set status");
         }
 
         #endregion Public Methods
@@ -75,6 +71,11 @@ namespace Infobot
         private static async Task Main(string[] args)
         {
             Logger = new Log();
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+            {
+                if (Discord.DisconnectAsync().Wait(Timeout))
+                    Logger.Info("Disconnected");
+            };
             Timeout = TimeSpan.FromSeconds(15);
             registeredCommands = new HashSet<ICommand>(new ICommand.Comparer());
             registeredSetups = new LinkedList<ISetup>();
@@ -100,9 +101,17 @@ namespace Infobot
             RegisterSetups();
             foreach (var setup in registeredSetups)
                 setup.Setup();
+            Discord.Ready += async (e) =>
+             {
+                 var task = Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status));
+                 if (await Task.WhenAny(task, Task.Delay(Timeout)).ConfigureAwait(false) == task && task.IsCompletedSuccessfully)
+                     Logger.Info("Status set");
+                 else
+                     Logger.Warning("Unable to set status");
+                 foreach (var setup in registeredSetups)
+                     setup.Connected();
+             };
             Connect();
-            foreach (var setup in registeredSetups)
-                setup.Connected();
             await Task.Delay(-1);
         }
 
