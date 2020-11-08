@@ -120,6 +120,15 @@ namespace Infobot
         public static void UpdateTimerDelay()
             => timer.Interval = Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds;
 
+        public void Connected()
+        {
+            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
+            timer.AutoReset = true;
+            timer.Enabled = true;
+            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
+            _ = Update();
+        }
+
         public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> args)
         {
             var task = ev.Message.RespondAsync("Updating timetables");
@@ -130,11 +139,6 @@ namespace Infobot
 
         public void Setup()
         {
-            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
-            timer.AutoReset = true;
-            timer.Enabled = true;
-            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
-            _ = Update();
         }
 
         #endregion Public Methods

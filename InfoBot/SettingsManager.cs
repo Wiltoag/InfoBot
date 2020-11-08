@@ -88,6 +88,10 @@ namespace Infobot
             }
         }
 
+        public void Connected()
+        {
+        }
+
         public void Setup()
         {
             timer = new Timer(TimeSpan.FromMinutes(30).TotalMilliseconds)

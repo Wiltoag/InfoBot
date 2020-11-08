@@ -8,6 +8,8 @@ namespace Infobot
     {
         #region Public Methods
 
+        void Connected();
+
         void Setup();
 
         #endregion Public Methods

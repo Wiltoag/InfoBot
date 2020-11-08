@@ -21,6 +21,7 @@ namespace Infobot
 
         private static string token;
         public static ICollection<ICommand> registeredCommands { get; private set; }
+        private static ICollection<ISetup> registeredSetups;
 
         #endregion Private Fields
 
@@ -76,6 +77,7 @@ namespace Infobot
             Logger = new Log();
             Timeout = TimeSpan.FromSeconds(15);
             registeredCommands = new HashSet<ICommand>(new ICommand.Comparer());
+            registeredSetups = new LinkedList<ISetup>();
             Settings.CurrentSettings = SettingsManager.MostRecent;
             Client = new HttpClient(new HttpClientHandler()
             {
@@ -93,10 +95,14 @@ namespace Infobot
                 token = Console.ReadLine();
                 Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
             }
-            Connect();
             Discord.MessageCreated += MessageCreated;
-            RegisterSetups();
             RegisterCommands();
+            RegisterSetups();
+            foreach (var setup in registeredSetups)
+                setup.Setup();
+            Connect();
+            foreach (var setup in registeredSetups)
+                setup.Connected();
             await Task.Delay(-1);
         }
 
@@ -108,7 +114,7 @@ namespace Infobot
         private static void RegisterSetups()
             => Assembly.GetExecutingAssembly().DefinedTypes
             .Where(type => type.ImplementedInterfaces.Contains(typeof(ISetup)))
-            .ForEach(type => type.GetMethod("Setup").Invoke(type.GetConstructor(new Type[0]).Invoke(null), null));
+            .ForEach(type => registeredSetups.Add(type.GetConstructor(new Type[0]).Invoke(null) as ISetup));
 
         private static async Task MessageCreated(MessageCreateEventArgs e)
         {
