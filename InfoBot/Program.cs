@@ -128,6 +128,7 @@ namespace Infobot
             UpdateTimetable.Setup();
             registeredCommands.Add(new Padoru());
             registeredCommands.Add(new Help());
+            registeredCommands.Add(new UpdateTimetable());
             await Task.Delay(-1);
         }
 

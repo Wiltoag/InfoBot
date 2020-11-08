@@ -1,4 +1,5 @@
 ﻿using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,13 +10,25 @@ using System.Timers;
 
 namespace Infobot
 {
-    internal static class UpdateTimetable
+    internal class UpdateTimetable : ICommand
     {
         #region Private Fields
 
         private static Timer timer;
 
         #endregion Private Fields
+
+        #region Public Properties
+
+        public bool Admin => true;
+
+        public IEnumerable<(string, string)> Detail => null;
+
+        public string Key => "edt";
+
+        public string Summary => "Force the update of the timetables";
+
+        #endregion Public Properties
 
         #region Public Methods
 
@@ -112,6 +125,11 @@ namespace Infobot
             })).ConfigureAwait(false);
             Program.Logger.Info("Timetables updated");
             SettingsManager.Save(Settings.CurrentSettings);
+        }
+
+        public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> args)
+        {
+            await Update();
         }
 
         #endregion Public Methods
