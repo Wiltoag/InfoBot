@@ -104,7 +104,7 @@ namespace Infobot
         {
             Logger = new Log();
             Timeout = TimeSpan.FromSeconds(15);
-            registeredCommands = new LinkedList<ICommand>();
+            registeredCommands = new HashSet<ICommand>(new ICommand.Comparer());
             Settings.CurrentSettings = SettingsManager.MostRecent;
             Client = new HttpClient(new HttpClientHandler()
             {
