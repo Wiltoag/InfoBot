@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -124,13 +125,20 @@ namespace Infobot
             }
             Connect();
             Discord.MessageCreated += MessageCreated;
-            SettingsManager.Setup();
-            UpdateTimetable.Setup();
-            registeredCommands.Add(new Padoru());
-            registeredCommands.Add(new Help());
-            registeredCommands.Add(new UpdateTimetable());
+            RegisterSetups();
+            RegisterCommands();
             await Task.Delay(-1);
         }
+
+        private static void RegisterCommands()
+            => Assembly.GetExecutingAssembly().DefinedTypes
+            .Where(type => type.ImplementedInterfaces.Contains(typeof(ICommand)))
+            .ForEach(type => registeredCommands.Add(type.GetConstructor(new Type[0]).Invoke(null) as ICommand));
+
+        private static void RegisterSetups()
+            => Assembly.GetExecutingAssembly().DefinedTypes
+            .Where(type => type.ImplementedInterfaces.Contains(typeof(ISetup)))
+            .ForEach(type => type.GetMethod("Setup").Invoke(type.GetConstructor(new Type[0]).Invoke(null), null));
 
         private static async Task MessageCreated(MessageCreateEventArgs e)
         {

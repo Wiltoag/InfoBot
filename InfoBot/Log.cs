@@ -33,6 +33,8 @@ namespace Infobot
 
         #region Public Methods
 
+        public void Debug(object value) => Write(value.ToString(), 3);
+
         public void Dispose()
         {
             logfile.Close();
@@ -56,6 +58,7 @@ namespace Infobot
                 0 => ConsoleColor.Blue,
                 1 => ConsoleColor.Yellow,
                 2 => ConsoleColor.Red,
+                3 => ConsoleColor.Green,
                 _ => default
             };
             var code = info switch
@@ -63,6 +66,7 @@ namespace Infobot
                 0 => "INFO",
                 1 => "WARN",
                 2 => "ERROR",
+                3 => "DEBUG",
                 _ => default
             };
             Console.ForegroundColor = ConsoleColor.DarkGray;

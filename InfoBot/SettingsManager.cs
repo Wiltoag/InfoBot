@@ -10,7 +10,7 @@ using System.Timers;
 
 namespace Infobot
 {
-    internal static class SettingsManager
+    internal class SettingsManager : ISetup
     {
         #region Private Fields
 
@@ -74,15 +74,6 @@ namespace Infobot
             }
         }
 
-        public static void Setup()
-        {
-            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
-            timer.AutoReset = true;
-            timer.Enabled = true;
-            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
-            _ = Update();
-        }
-
         public static async Task Update()
         {
             Directory.CreateDirectory("settings");
@@ -95,6 +86,15 @@ namespace Infobot
                     .Select(async file => await Task.Run(() => File.Delete(file)).ConfigureAwait(false))
                     ).ContinueWith((t) => Program.Logger.Info("Files deleted"));
             }
+        }
+
+        public void Setup()
+        {
+            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
+            timer.AutoReset = true;
+            timer.Enabled = true;
+            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
+            _ = Update();
         }
 
         #endregion Public Methods

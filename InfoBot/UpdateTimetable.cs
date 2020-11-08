@@ -10,7 +10,7 @@ using System.Timers;
 
 namespace Infobot
 {
-    internal class UpdateTimetable : ICommand
+    internal class UpdateTimetable : ICommand, ISetup
     {
         #region Private Fields
 
@@ -31,15 +31,6 @@ namespace Infobot
         #endregion Public Properties
 
         #region Public Methods
-
-        public static void Setup()
-        {
-            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
-            timer.AutoReset = true;
-            timer.Enabled = true;
-            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
-            _ = Update();
-        }
 
         public static async Task Update()
         {
@@ -133,6 +124,15 @@ namespace Infobot
             await Update();
             if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompleted)
                 Program.Logger.Warning("Unable to respond");
+        }
+
+        public void Setup()
+        {
+            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
+            timer.AutoReset = true;
+            timer.Enabled = true;
+            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
+            _ = Update();
         }
 
         #endregion Public Methods
