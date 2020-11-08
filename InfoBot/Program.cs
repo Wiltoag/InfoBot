@@ -43,17 +43,7 @@ namespace Infobot
         /// </summary>
         public static DiscordClient Discord { get; private set; }
 
-        /// <summary>
-        /// The main discord server
-        /// </summary>
-        public static DiscordGuild DUTInfoServer { get; private set; }
-
         public static Log Logger { get; private set; }
-
-        /// <summary>
-        /// The sharing emoji
-        /// </summary>
-        public static DiscordEmoji Sharing { get; private set; }
 
         public static TimeSpan Timeout { get; private set; }
 
@@ -71,30 +61,10 @@ namespace Infobot
                 Logger.Error($"Failed to connect to Discord");
                 Environment.Exit(0);
             }
-            {
-#if DEBUG
-                var task = Discord.GetGuildAsync(437704877221609472);
-#else
-                var task = Discord.GetGuildAsync(619513574850560010);
-#endif
-                if (task.Wait(Timeout) && task.IsCompletedSuccessfully)
-                {
-                    DUTInfoServer = task.Result;
-                    Logger.Info($"Connected to '{DUTInfoServer.Name}'");
-                }
-                else
-                {
-                    Logger.Error($"Failed to connect to the server");
-                    Environment.Exit(0);
-                }
-            }
             if (Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status)).Wait(Timeout))
                 Logger.Info("Status set");
             else
                 Logger.Warning("Unable to set status");
-            Sharing = DUTInfoServer.Emojis.FirstOrDefault((e) => e.Name == "partage");
-            if (Sharing == null)
-                Logger.Warning("Sharing emote not found");
         }
 
         #endregion Public Methods
@@ -178,7 +148,7 @@ namespace Infobot
                 if (commands.Any())
                     foreach (var command in commands)
                     {
-                        var memberTask = DUTInfoServer.GetMemberAsync(e.Author.Id);
+                        var memberTask = e.Guild.GetMemberAsync(e.Author.Id);
                         if ((await Task.WhenAny(memberTask, Task.Delay(Timeout)).ConfigureAwait(false)) == memberTask && memberTask.IsCompletedSuccessfully)
                             if (!command.Admin || memberTask.Result.IsAdmin())
                             {
