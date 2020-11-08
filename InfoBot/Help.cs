@@ -47,7 +47,7 @@ namespace Infobot
                     }
                     else
                     {
-                        var task = ev.Message.RespondAsync($"Unknown command `{key}`, type `{Settings.CurrentSettings.commandIdentifier}` for more informations");
+                        var task = ev.Message.RespondAsync($"Unknown command `{key}`, type `{Settings.CurrentSettings.commandIdentifier}help` for more informations");
                         if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                             Program.Logger.Warning($"Unable to send help for '{command.Key}'");
                     }
