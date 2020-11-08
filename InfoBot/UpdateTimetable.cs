@@ -118,6 +118,9 @@ namespace Infobot
             SettingsManager.Save(Settings.CurrentSettings);
         }
 
+        public static void UpdateTimerDelay()
+            => timer.Interval = Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds;
+
         public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> args)
         {
             var task = ev.Message.RespondAsync("Updating timetables");

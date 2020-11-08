@@ -90,9 +90,11 @@ namespace Infobot
 
         public void Setup()
         {
-            timer = new Timer(Settings.CurrentSettings.timetableDelay.Value.TotalMilliseconds);
-            timer.AutoReset = true;
-            timer.Enabled = true;
+            timer = new Timer(TimeSpan.FromMinutes(30).TotalMilliseconds)
+            {
+                AutoReset = true,
+                Enabled = true
+            };
             timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
             _ = Update();
         }
