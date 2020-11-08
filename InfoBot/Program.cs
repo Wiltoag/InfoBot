@@ -167,6 +167,14 @@ namespace Infobot
                     args.AddLast(currArg);
                 var commands = registeredCommands
                                 .Where(command => command.Key.ToLower() == args.First.Value.ToLower());
+                var sendArgs = args.Skip(1);
+                bool autoRemoveCommand = false;
+                if (sendArgs.Any())
+                {
+                    autoRemoveCommand = args.Last.Value == "--remove";
+                    if (autoRemoveCommand)
+                        sendArgs = sendArgs.SkipLast(1);
+                }
                 if (commands.Any())
                     foreach (var command in commands)
                     {
@@ -175,7 +183,13 @@ namespace Infobot
                             if (!command.Admin || memberTask.Result.IsAdmin())
                             {
                                 Logger.Info($"'{command.Key}' called by '{e.Author.Username}'");
-                                await command.Handle(e, args.Where((s, i) => i > 0));
+                                await command.Handle(e, sendArgs);
+                                if (autoRemoveCommand)
+                                {
+                                    var removeTask = e.Message.DeleteAsync();
+                                    if ((await Task.WhenAny(removeTask, Task.Delay(Timeout)).ConfigureAwait(false)) != removeTask && !removeTask.IsCompletedSuccessfully)
+                                        Logger.Warning($"Unable to remove the command");
+                                }
                             }
                             else
                             {
@@ -186,7 +200,7 @@ namespace Infobot
                             Logger.Warning($"Unable to find member rights");
                     }
                 else
-                    await e.Message.RespondAsync($"Unknown command `{args.First.Value}`, type `{Settings.CurrentSettings.commandIdentifier}help` for more informations").ConfigureAwait(false);
+                    await e.Message.RespondAsync($"Unknown command `{args.First.Value}`, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key}` for more informations").ConfigureAwait(false);
             }
         }
 

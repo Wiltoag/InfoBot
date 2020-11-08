@@ -13,11 +13,11 @@ namespace Infobot
     {
         #region Public Properties
 
+        public static string Key => "padoru";
         public bool Admin => false;
 
         public IEnumerable<(string, string)> Detail => null;
-        public string Key => "padoru";
-
+        string ICommand.Key => Key;
         public string Summary => "Displays the remaining number of days until Christmas";
 
         #endregion Public Properties

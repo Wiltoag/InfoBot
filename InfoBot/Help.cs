@@ -12,15 +12,15 @@ namespace Infobot
     {
         #region Public Properties
 
+        public static string Key => "help";
         public bool Admin => false;
 
         public IEnumerable<(string, string)> Detail => new (string, string)[] {
-            ("`help`", "Displays the help panel"),
-            ("`help <command> [<commands ...>]`", "Displays help for the specified commands")
+            ($"`{Help.Key}`", "Displays the help panel"),
+            ($"`{Help.Key} <command> [<commands ...>]`", "Displays help for the specified commands")
         };
 
-        public string Key => "help";
-
+        string ICommand.Key => Key;
         public string Summary => "Displays help to use commands";
 
         #endregion Public Properties
@@ -88,7 +88,9 @@ namespace Infobot
                 }
                 else
                     embed.AddField("User commands :", "No commands");
-                embed.Footer = new DiscordEmbedBuilder.EmbedFooter { Text = $"Use {Settings.CurrentSettings.commandIdentifier}help <command> for more informations about a command." };
+                embed.AddField("Auto delete message",
+                    $"Put `--remove` as last argument of the command to delete it automatically.\nEx : `{Settings.CurrentSettings.commandIdentifier}{Key} {Padoru.Key} --remove`");
+                embed.Footer = new DiscordEmbedBuilder.EmbedFooter { Text = $"Use {Settings.CurrentSettings.commandIdentifier}{Help.Key} <command> for more informations about a command." };
                 var task = ev.Message.RespondAsync(embed: embed);
                 if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                     Program.Logger.Warning($"Unable to send help");

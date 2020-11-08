@@ -20,12 +20,12 @@ namespace Infobot
 
         #region Public Properties
 
+        public static string Key => "edt";
         public bool Admin => true;
 
         public IEnumerable<(string, string)> Detail => null;
 
-        public string Key => "edt";
-
+        string ICommand.Key => Key;
         public string Summary => "Force the update of the timetables";
 
         #endregion Public Properties

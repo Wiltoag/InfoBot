@@ -34,7 +34,7 @@ namespace Infobot
                     timetableDelay = TimeSpan.FromHours(2),
                     commandIdentifier = "$"
                 };
-                result.status = $"{result.commandIdentifier}help";
+                result.status = $"{result.commandIdentifier}{Help.Key}";
                 return result;
             }
         }

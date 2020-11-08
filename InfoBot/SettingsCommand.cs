@@ -12,16 +12,16 @@ namespace Infobot
     {
         #region Public Properties
 
+        public static string Key => "settings";
         public bool Admin => true;
 
         public IEnumerable<(string, string)> Detail => new (string, string)[] {
-            ("`settings get <setting> [<settings...>]`", "Displays the value of the given settings"),
-            ("`settings get all`", "Displays the value of all settings"),
-            ("`settings set <setting> <value>`", "Changes a specific setting for the given value")
+            ($"`{Key} get <setting> [<settings...>]`", "Displays the value of the given settings"),
+            ($"`{Key} get all`", "Displays the value of all settings"),
+            ($"`{Key} set <setting> <value>`", "Changes a specific setting for the given value")
         };
 
-        public string Key => "settings";
-
+        string ICommand.Key => Key;
         public string Summary => "See or edit settings";
 
         #endregion Public Properties
@@ -72,14 +72,14 @@ namespace Infobot
                                     }
                                     else
                                     {
-                                        var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}help {Key}` for more informations");
+                                        var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                                         if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                                             Program.Logger.Warning("Unable to respond");
                                     }
                                 }
                                 else
                                 {
-                                    var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}help {Key}` for more informations");
+                                    var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                                     if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                                         Program.Logger.Warning("Unable to respond");
                                 }
@@ -122,7 +122,7 @@ namespace Infobot
 
                         default:
                             {
-                                var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}help {Key}` for more informations");
+                                var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                                 if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                                     Program.Logger.Warning("Unable to respond");
                             }
@@ -131,14 +131,14 @@ namespace Infobot
                 }
                 else
                 {
-                    var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}help {Key}` for more informations");
+                    var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                     if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                         Program.Logger.Warning("Unable to respond");
                 }
             }
             else
             {
-                var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}help {Key}` for more informations");
+                var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                 if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                     Program.Logger.Warning("Unable to respond");
             }
