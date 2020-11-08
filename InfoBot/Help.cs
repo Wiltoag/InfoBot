@@ -14,10 +14,14 @@ namespace Infobot
 
         public bool Admin => false;
 
-        public IEnumerable<(string, string)> Detail => null;
+        public IEnumerable<(string, string)> Detail => new (string, string)[] {
+            ("`help`", "Displays the help panel"),
+            ("`help <command> [<command> <command> ...]`", "Displays help for the specified commands")
+        };
+
         public string Key => "help";
 
-        public string Summary => "Displays the help panel";
+        public string Summary => "Displays help to use commands";
 
         #endregion Public Properties
 
@@ -34,8 +38,9 @@ namespace Infobot
                     {
                         var embed = new DiscordEmbedBuilder()
                             .WithTitle($"`{command.Key}`")
-                            .WithDescription(command.Summary);
-                        command.Detail?.ForEach(set => embed.AddField($"`{set.Item1}`", set.Item2));
+                            .WithDescription(command.Summary)
+                            .WithThumbnailUrl(Program.Discord.CurrentUser.AvatarUrl);
+                        command.Detail?.ForEach(set => embed.AddField($"- `{set.Item1}`", $"{set.Item2}"));
                         var task = ev.Message.RespondAsync(embed: embed);
                         if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
                             Program.Logger.Warning($"Unable to send help for '{command.Key}'");
@@ -51,7 +56,8 @@ namespace Infobot
             else
             {
                 var builder = new StringBuilder();
-                var embed = new DiscordEmbedBuilder();
+                var embed = new DiscordEmbedBuilder()
+                    .WithThumbnailUrl(Program.Discord.CurrentUser.AvatarUrl);
                 var admins = from command in Program.registeredCommands
                              where command.Admin
                              select command;
