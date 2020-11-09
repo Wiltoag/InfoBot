@@ -23,19 +23,33 @@ namespace Infobot
         public static string Key => "edt";
         public bool Admin => true;
 
-        public IEnumerable<(string, string)> Detail => null;
+        public IEnumerable<(string, string)> Detail => new (string, string)[]{
+            ($"`{Key}`","Proceeds to trigger a timetable update for all groups"),
+            ($"`{Key} <groups>`", "Forces the timetable update (even if nothing changed) for the given groups (`11`, `12`, `21`, `22`, `31`, `32`)"),
+            ($"`{Key} force`","Forces the timetable update (even if nothing changed) for all groups"),
+            ($"`{Key} force <groups>`", "Proceeds to trigger a timetable update for the given groups (`11`, `12`, `21`, `22`, `31`, `32`)")
+        };
 
         string ICommand.Key => Key;
-        public string Summary => "Force the update of the timetables";
+        public string Summary => "Updates of the timetables";
 
         #endregion Public Properties
 
         #region Public Methods
 
-        public static async Task Update()
+        public static async Task Update(bool force = false, params int[] groups)
         {
+            if (groups.Length == 0)
+            {
+                var list = new List<int>();
+                Settings.CurrentSettings.timetableUrls.ForEach((u, index) => list.Add(index));
+                groups = list.ToArray();
+                Program.Logger.Debug("test");
+            }
             string regex = Uri.EscapeDataString("/^(.*) - .* - .* - (.*)$/");
-            await Task.WhenAll(Settings.CurrentSettings.timetableUrls.Select(async (url, index) =>
+            await Task.WhenAll(Settings.CurrentSettings.timetableUrls
+                .Where((u, index) => groups.Contains(index))
+                .Select(async (url, index) =>
             {
                 if (url.Length > 0)
                 {
@@ -49,7 +63,7 @@ namespace Infobot
                         {
                             dynamic json = Newtonsoft.Json.JsonConvert.DeserializeObject(task.Result);
                             int newHash = json.code;
-                            if (newHash != oldHash)
+                            if (newHash != oldHash || force)
                             {
                                 var channelTask = Program.Discord.GetChannelAsync(Settings.CurrentSettings.timetableChannels[index]);
                                 if ((await Task.WhenAny(channelTask, Task.Delay(Program.Timeout)).ConfigureAwait(false)) == channelTask && channelTask.IsCompletedSuccessfully)
@@ -129,10 +143,67 @@ namespace Infobot
             _ = Update();
         }
 
-        public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> args)
+        public async Task Handle(MessageCreateEventArgs ev, IEnumerable<string> a)
         {
             var task = ev.Message.RespondAsync("Updating timetables");
-            await Update();
+            var args = new List<string>(a);
+            if (args.Any())
+            {
+                if (args.First() == "force")
+                {
+                    args = new List<string>(a.Skip(1));
+                    if (args.Any())
+                    {
+                        var groups = args.Select(arg => arg switch
+                        {
+                            "11" => 0,
+                            "12" => 1,
+                            "21" => 2,
+                            "22" => 3,
+                            "31" => 4,
+                            "32" => 5,
+                            _ => -1
+                        }).ToArray();
+                        groups.ForEach(async (a, index) =>
+                        {
+                            if (a == -1)
+                            {
+                                var task = ev.Message.RespondAsync($"Unknown group `{args[index]}`");
+                                if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompleted)
+                                    Program.Logger.Warning("Unable to respond");
+                            }
+                        });
+                        await Update(true, groups);
+                    }
+                    else
+                        await Update(true);
+                }
+                else
+                {
+                    var groups = args.Select(arg => arg switch
+                    {
+                        "11" => 0,
+                        "12" => 1,
+                        "21" => 2,
+                        "22" => 3,
+                        "31" => 4,
+                        "32" => 5,
+                        _ => -1
+                    }).ToArray();
+                    groups.ForEach(async (a, index) =>
+                    {
+                        if (a == -1)
+                        {
+                            var task = ev.Message.RespondAsync($"Unknown group `{args[index]}`");
+                            if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompleted)
+                                Program.Logger.Warning("Unable to respond");
+                        }
+                    });
+                    await Update(false, groups);
+                }
+            }
+            else
+                await Update();
             if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompleted)
                 Program.Logger.Warning("Unable to respond");
         }
