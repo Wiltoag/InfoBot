@@ -25,9 +25,9 @@ namespace Infobot
 
         public IEnumerable<(string, string)> Detail => new (string, string)[]{
             ($"`{Key}`","Proceeds to trigger a timetable update for all groups"),
-            ($"`{Key} <groups>`", "Forces the timetable update (even if nothing changed) for the given groups (`11`, `12`, `21`, `22`, `31`, `32`)"),
+            ($"`{Key} <groups>`", "Proceeds to trigger a timetable update for the given groups (`11`, `12`, `21`, `22`, `31`, `32`)"),
             ($"`{Key} force`","Forces the timetable update (even if nothing changed) for all groups"),
-            ($"`{Key} force <groups>`", "Proceeds to trigger a timetable update for the given groups (`11`, `12`, `21`, `22`, `31`, `32`)")
+            ($"`{Key} force <groups>`", "Forces the timetable update (even if nothing changed) for the given groups (`11`, `12`, `21`, `22`, `31`, `32`)")
         };
 
         string ICommand.Key => Key;
