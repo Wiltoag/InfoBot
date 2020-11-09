@@ -118,12 +118,22 @@ namespace Infobot
         private static void RegisterCommands()
             => Assembly.GetExecutingAssembly().DefinedTypes
             .Where(type => type.ImplementedInterfaces.Contains(typeof(ICommand)))
-            .ForEach(type => registeredCommands.Add(type.GetConstructor(new Type[0]).Invoke(null) as ICommand));
+            .ForEach(type =>
+            {
+                var command = type.GetConstructor(new Type[0]).Invoke(null) as ICommand;
+                registeredCommands.Add(command);
+                Logger.Info($"Command '{command.GetType()}' registered, with key '{command.Key}'");
+            });
 
         private static void RegisterSetups()
             => Assembly.GetExecutingAssembly().DefinedTypes
             .Where(type => type.ImplementedInterfaces.Contains(typeof(ISetup)))
-            .ForEach(type => registeredSetups.Add(type.GetConstructor(new Type[0]).Invoke(null) as ISetup));
+            .ForEach(type =>
+            {
+                var setup = type.GetConstructor(new Type[0]).Invoke(null) as ISetup;
+                registeredSetups.Add(setup);
+                Logger.Info($"Setup '{setup.GetType()}' registered");
+            });
 
         private static async Task MessageCreated(MessageCreateEventArgs e)
         {
