@@ -174,7 +174,7 @@ namespace Infobot
                     foreach (var command in commands)
                     {
                         var memberTask = e.Guild.GetMemberAsync(e.Author.Id);
-                        if ((await Task.WhenAny(memberTask, Task.Delay(Timeout))) == memberTask && memberTask.IsCompletedSuccessfully)
+                        if (await Task.WhenAny(memberTask, Task.Delay(Timeout)) == memberTask && memberTask.IsCompletedSuccessfully)
                             if (!command.Admin || memberTask.Result.IsAdmin())
                             {
                                 Logger.Info($"'{command.Key}' called by '{e.Author.Username}'");
@@ -182,7 +182,7 @@ namespace Infobot
                                 if (autoRemoveCommand)
                                 {
                                     var removeTask = e.Message.DeleteAsync();
-                                    if ((await Task.WhenAny(removeTask, Task.Delay(Timeout))) != removeTask && !removeTask.IsCompletedSuccessfully)
+                                    if (await Task.WhenAny(removeTask, Task.Delay(Timeout)) != removeTask && !removeTask.IsCompletedSuccessfully)
                                         Logger.Warning($"Unable to remove the command");
                                 }
                             }
