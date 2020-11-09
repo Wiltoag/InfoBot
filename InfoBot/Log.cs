@@ -8,7 +8,10 @@ using System.Windows.Markup;
 
 namespace Infobot
 {
-    internal class Log : IDisposable
+    /// <summary>
+    /// Class used to log to the console and log files
+    /// </summary>
+    public class Log : IDisposable
     {
         #region Private Fields
 
@@ -20,6 +23,9 @@ namespace Infobot
 
         #region Public Constructors
 
+        /// <summary>
+        /// Constructor
+        /// </summary>
         public Log()
         {
             mutex = new Mutex(false);
@@ -33,17 +39,36 @@ namespace Infobot
 
         #region Public Methods
 
+        /// <summary>
+        /// Special log type used to debug stuff
+        /// </summary>
+        /// <param name="value">object to print</param>
         public void Debug(object value) => Write(value.ToString(), 3);
 
+        /// <summary>
+        /// Dispose this instance of Log, closing the files
+        /// </summary>
         public void Dispose()
         {
             logfile.Close();
         }
 
+        /// <summary>
+        /// Error log type. Used when something wrong happened
+        /// </summary>
+        /// <param name="value">object to print</param>
         public void Error(object value) => Write(value.ToString(), 2);
 
+        /// <summary>
+        /// Info log type. Used to display
+        /// </summary>
+        /// <param name="value"></param>
         public void Info(object value) => Write(value.ToString(), 0);
 
+        /// <summary>
+        /// Warning log type. Used when something requires attention
+        /// </summary>
+        /// <param name="value"></param>
         public void Warning(object value) => Write(value.ToString(), 1);
 
         #endregion Public Methods

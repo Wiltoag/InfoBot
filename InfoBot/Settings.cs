@@ -6,22 +6,55 @@ using System.Threading.Tasks;
 
 namespace Infobot
 {
+    /// <summary>
+    /// Settings saved to the file
+    /// </summary>
     public class Settings
     {
         #region Public Fields
 
+        /// <summary>
+        /// The currently used settings of the bot
+        /// </summary>
         public static Settings CurrentSettings;
+
+        /// <summary>
+        /// The id at the beginning of a command when writing in the chat
+        /// </summary>
         public string commandIdentifier;
+
+        /// <summary>
+        /// Last value of the hashcode of the timetables
+        /// </summary>
         public int[] oldHash;
+
+        /// <summary>
+        /// The current status used by the bot
+        /// </summary>
         public string status;
+
+        /// <summary>
+        /// Ids of the timetable channels
+        /// </summary>
         public ulong[] timetableChannels;
+
+        /// <summary>
+        /// Delay between each timetable check
+        /// </summary>
         public TimeSpan? timetableDelay;
+
+        /// <summary>
+        /// Urls of the ical for the timetables
+        /// </summary>
         public string[] timetableUrls;
 
         #endregion Public Fields
 
         #region Public Properties
 
+        /// <summary>
+        /// Creates settings used by default
+        /// </summary>
         public static Settings Default
         {
             get
@@ -39,6 +72,12 @@ namespace Infobot
             }
         }
 
+        /// <summary>
+        /// Returns the available settings.
+        ///
+        /// The key is the identifier of the setting. The item 1 of the tuple is the get() function.
+        /// The item 2 of the tuple is the set() of the tuple, and returns true if successful
+        /// </summary>
         [JsonIgnore]
         public Dictionary<string, (Func<string>, Func<string, bool>)> AvailableSettings
         {
@@ -111,6 +150,9 @@ namespace Infobot
 
         #region Public Methods
 
+        /// <summary>
+        /// Checks if every field is there in the settings
+        /// </summary>
         public void CheckIntegrity()
         {
             var defaultSettings = Default;

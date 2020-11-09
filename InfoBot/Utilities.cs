@@ -14,7 +14,10 @@ using Newtonsoft.Json;
 
 namespace Infobot
 {
-    internal static class Utilities
+    /// <summary>
+    /// Utility methods
+    /// </summary>
+    public static class Utilities
     {
         #region Public Methods
 
@@ -121,6 +124,11 @@ namespace Infobot
             return newStr;
         }
 
+        /// <summary>
+        /// Returns true if the member is admin
+        /// </summary>
+        /// <param name="member">member to test</param>
+        /// <returns>True if the member is an admin, false otherwise</returns>
         public static bool IsAdmin(this DiscordMember member)
                                                     => member.IsOwner || member.Roles.Any(r => r.CheckPermission(Permissions.Administrator) == PermissionLevel.Allowed);
 
