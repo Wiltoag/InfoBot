@@ -58,14 +58,14 @@ namespace Infobot
                     Program.Logger.Info($"Requesting '{jsonRequest}'");
                     {
                         var task = Program.Client.GetStringAsync(jsonRequest);
-                        if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) == task && task.IsCompletedSuccessfully)
+                        if (await task.TimeoutTask())
                         {
                             dynamic json = Newtonsoft.Json.JsonConvert.DeserializeObject(task.Result);
                             int newHash = json.code;
                             if (newHash != oldHash || force)
                             {
                                 var channelTask = Program.Discord.GetChannelAsync(Settings.CurrentSettings.timetableChannels[index]);
-                                if (await Task.WhenAny(channelTask, Task.Delay(Program.Timeout)) == channelTask && channelTask.IsCompletedSuccessfully)
+                                if (await channelTask.TimeoutTask())
                                 {
                                     var channel = channelTask.Result;
                                     var oldMessages = (await channel.GetMessagesAsync(20, null, null, channel.LastMessageId)).Where(m => m.Author.IsCurrent);
@@ -74,12 +74,12 @@ namespace Infobot
                                     var error = false;
                                     {
                                         var getTask = Program.Client.GetAsync($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}");
-                                        if (await Task.WhenAny(getTask, Task.Delay(Program.Timeout)) == getTask && getTask.IsCompletedSuccessfully)
+                                        if (await getTask.TimeoutTask())
                                         {
                                             var response = getTask.Result;
                                             var sendTask = channel.SendMessageAsync(embed: new DiscordEmbedBuilder().WithTitle("Emploi du temps semaine en cours")
                                             .WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
-                                            if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)) != sendTask || !sendTask.IsCompletedSuccessfully)
+                                            if (await sendTask.TimeoutTask())
                                             {
                                                 error = true;
                                                 Program.Logger.Error($"Unable to send the week 1 for {index / 2 + 1}.{1 + index % 2}");
@@ -93,12 +93,12 @@ namespace Infobot
                                     }
                                     {
                                         var getTask = Program.Client.GetAsync($"{Program.WildgoatApi}/ical-png.php?url={Uri.EscapeDataString(url)}&regex={regex}&offset=1");
-                                        if (await Task.WhenAny(getTask, Task.Delay(Program.Timeout)) == getTask && getTask.IsCompletedSuccessfully)
+                                        if (await getTask.TimeoutTask())
                                         {
                                             var response = getTask.Result;
                                             var sendTask = channel.SendMessageAsync(embed: new DiscordEmbedBuilder().WithTitle("Emploi du temps semaine prochaine")
                                             .WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
-                                            if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)) != sendTask || !sendTask.IsCompletedSuccessfully)
+                                            if (await sendTask.TimeoutTask())
                                             {
                                                 error = true;
                                                 Program.Logger.Error($"Unable to send the week 2 for {index / 2 + 1}.{1 + index % 2}");
@@ -168,7 +168,7 @@ namespace Infobot
                             if (a == -1)
                             {
                                 var task = ev.Message.RespondAsync($"Unknown group `{args[index]}`");
-                                if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompleted)
+                                if (await task.TimeoutTask())
                                     Program.Logger.Error("Unable to respond");
                             }
                         });
@@ -194,7 +194,7 @@ namespace Infobot
                         if (a == -1)
                         {
                             var task = ev.Message.RespondAsync($"Unknown group `{args[index]}`");
-                            if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompleted)
+                            if (await task.TimeoutTask())
                                 Program.Logger.Error("Unable to respond");
                         }
                     });
@@ -203,7 +203,7 @@ namespace Infobot
             }
             else
                 await Update();
-            if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompleted)
+            if (await task.TimeoutTask())
                 Program.Logger.Error("Unable to respond");
         }
 

@@ -41,13 +41,13 @@ namespace Infobot
                             .WithDescription(command.Summary);
                         command.Detail?.ForEach(set => embed.AddField($"- `{set.Item1}`", $"{set.Item2}"));
                         var task = ev.Message.RespondAsync(embed: embed);
-                        if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
+                        if (!await task.TimeoutTask())
                             Program.Logger.Error($"Unable to send help for '{command.Key}'");
                     }
                     else
                     {
                         var task = ev.Message.RespondAsync($"Unknown command `{key}`, type `{Settings.CurrentSettings.commandIdentifier}help` for more informations");
-                        if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
+                        if (!await task.TimeoutTask())
                             Program.Logger.Error($"Unable to send help for '{command.Key}'");
                     }
                 }
@@ -92,7 +92,7 @@ namespace Infobot
                     $"Put `--remove` as last argument of the command to delete it automatically.\nEx : `{Settings.CurrentSettings.commandIdentifier}{Key} {Padoru.Key} --remove`");
                 embed.Footer = new DiscordEmbedBuilder.EmbedFooter { Text = $"Use {Settings.CurrentSettings.commandIdentifier}{Help.Key} <command> for more informations about a command." };
                 var task = ev.Message.RespondAsync(embed: embed);
-                if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
+                if (!await task.TimeoutTask())
                     Program.Logger.Error($"Unable to send help");
             }
         }

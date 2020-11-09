@@ -132,6 +132,14 @@ namespace Infobot
         public static bool IsAdmin(this DiscordMember member)
                                                     => member.IsOwner || member.Roles.Any(r => r.CheckPermission(Permissions.Administrator) == PermissionLevel.Allowed);
 
+        /// <summary>
+        /// Runs a task asynchrounously with a timeout
+        /// </summary>
+        /// <param name="task">task to run</param>
+        /// <returns>true if the task completed</returns>
+        public static async Task<bool> TimeoutTask(this Task task)
+            => await Task.WhenAny(task, Task.Delay(Program.Timeout)) == task && task.IsCompletedSuccessfully;
+
         #endregion Public Methods
 
         #region Private Methods

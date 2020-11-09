@@ -106,7 +106,7 @@ namespace Infobot
                 Discord.Ready += async (e) =>
                 {
                     var task = Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status));
-                    if (await Task.WhenAny(task, Task.Delay(Timeout)) == task && task.IsCompletedSuccessfully)
+                    if (await task.TimeoutTask())
                         Logger.Info("Status set");
                     else
                         Logger.Error("Unable to set status");
@@ -195,7 +195,7 @@ namespace Infobot
                     foreach (var command in commands)
                     {
                         var memberTask = e.Guild.GetMemberAsync(e.Author.Id);
-                        if (await Task.WhenAny(memberTask, Task.Delay(Timeout)) == memberTask && memberTask.IsCompletedSuccessfully)
+                        if (await memberTask.TimeoutTask())
                             if (!command.Admin || memberTask.Result.IsAdmin())
                             {
                                 Logger.Info($"'{command.Key}' called by '{e.Author.Username}'");
@@ -203,7 +203,7 @@ namespace Infobot
                                 if (autoRemoveCommand)
                                 {
                                     var removeTask = e.Message.DeleteAsync();
-                                    if (await Task.WhenAny(removeTask, Task.Delay(Timeout)) != removeTask && !removeTask.IsCompletedSuccessfully)
+                                    if (!await removeTask.TimeoutTask())
                                         Logger.Error($"Unable to remove the command");
                                 }
                             }
