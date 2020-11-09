@@ -11,7 +11,8 @@ To add a new command, simply create a new class which implements [ICommand](http
 
 To add a setup (called once at the beginning, used for example to setup timers), create a new class which implements [ISetup](https://github.com/WildGoat07/InfoBot/blob/898d0a626e65e909031e97d1df6b2f217e15df5f/InfoBot/ISetup.cs).
 
-* `Setup()` is the only method which is called at the start of the bot.
+* `Setup()` is the method which is called at the start of the bot.
+* `Connected()` is the method which is called once the bot is ready (connected).
 
 To ease the sarting of the bot, create a `token.txt` file next to the `.exe` which contains the token of the bot.
 
