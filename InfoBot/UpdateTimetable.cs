@@ -44,7 +44,6 @@ namespace Infobot
                 var list = new List<int>();
                 Settings.CurrentSettings.timetableUrls.ForEach((u, index) => list.Add(index));
                 groups = list.ToArray();
-                Program.Logger.Debug("test");
             }
             string regex = Uri.EscapeDataString("/^(.*) - .* - .* - (.*)$/");
             await Task.WhenAll(Settings.CurrentSettings.timetableUrls
