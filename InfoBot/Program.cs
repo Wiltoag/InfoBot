@@ -104,7 +104,7 @@ namespace Infobot
             Discord.Ready += async (e) =>
              {
                  var task = Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status));
-                 if (await Task.WhenAny(task, Task.Delay(Timeout)).ConfigureAwait(false) == task && task.IsCompletedSuccessfully)
+                 if (await Task.WhenAny(task, Task.Delay(Timeout)) == task && task.IsCompletedSuccessfully)
                      Logger.Info("Status set");
                  else
                      Logger.Warning("Unable to set status");
@@ -174,7 +174,7 @@ namespace Infobot
                     foreach (var command in commands)
                     {
                         var memberTask = e.Guild.GetMemberAsync(e.Author.Id);
-                        if ((await Task.WhenAny(memberTask, Task.Delay(Timeout)).ConfigureAwait(false)) == memberTask && memberTask.IsCompletedSuccessfully)
+                        if ((await Task.WhenAny(memberTask, Task.Delay(Timeout))) == memberTask && memberTask.IsCompletedSuccessfully)
                             if (!command.Admin || memberTask.Result.IsAdmin())
                             {
                                 Logger.Info($"'{command.Key}' called by '{e.Author.Username}'");
@@ -182,20 +182,20 @@ namespace Infobot
                                 if (autoRemoveCommand)
                                 {
                                     var removeTask = e.Message.DeleteAsync();
-                                    if ((await Task.WhenAny(removeTask, Task.Delay(Timeout)).ConfigureAwait(false)) != removeTask && !removeTask.IsCompletedSuccessfully)
+                                    if ((await Task.WhenAny(removeTask, Task.Delay(Timeout))) != removeTask && !removeTask.IsCompletedSuccessfully)
                                         Logger.Warning($"Unable to remove the command");
                                 }
                             }
                             else
                             {
                                 Logger.Warning($"'{command.Key}' canceled for '{e.Author.Username}' : no admin rights");
-                                await e.Message.RespondAsync("You have to be admin to call this command.").ConfigureAwait(false);
+                                await e.Message.RespondAsync("You have to be admin to call this command.");
                             }
                         else
                             Logger.Warning($"Unable to find member rights");
                     }
                 else
-                    await e.Message.RespondAsync($"Unknown command `{args.First.Value}`, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key}` for more informations").ConfigureAwait(false);
+                    await e.Message.RespondAsync($"Unknown command `{args.First.Value}`, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key}` for more informations");
             }
         }
 

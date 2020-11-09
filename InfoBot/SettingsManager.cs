@@ -83,7 +83,7 @@ namespace Infobot
                 await Task.WhenAll(Directory.GetFiles("settings")
                     .OrderByDescending(file => file, StringComparer.CurrentCulture)
                     .Skip(25)
-                    .Select(async file => await Task.Run(() => File.Delete(file)).ConfigureAwait(false))
+                    .Select(async file => await Task.Run(() => File.Delete(file)))
                     ).ContinueWith((t) => Program.Logger.Info("Files deleted"));
             }
         }
@@ -99,7 +99,7 @@ namespace Infobot
                 AutoReset = true,
                 Enabled = true
             };
-            timer.Elapsed += async (sender, e) => await Update().ConfigureAwait(false);
+            timer.Elapsed += async (sender, e) => await Update();
             _ = Update();
         }
 

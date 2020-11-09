@@ -34,7 +34,7 @@ namespace Infobot
                     lowered.Contains("partage"))
                     {
                         var task = e.Message.CreateReactionAsync(emoji);
-                        if ((await Task.WhenAny(task, Task.Delay(Program.Timeout)).ConfigureAwait(false)) != task || !task.IsCompletedSuccessfully)
+                        if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
                             Program.Logger.Warning("Unable to share");
                     }
                 }
