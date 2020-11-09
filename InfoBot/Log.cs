@@ -60,6 +60,12 @@ namespace Infobot
         public void Error(object value) => Write(value.ToString(), 2);
 
         /// <summary>
+        /// Fatal log type. Used when the program stops
+        /// </summary>
+        /// <param name="value">object to print</param>
+        public void Fatal(object value) => Write(value.ToString(), 4);
+
+        /// <summary>
         /// Info log type. Used to display
         /// </summary>
         /// <param name="value"></param>
@@ -78,6 +84,12 @@ namespace Infobot
         private void Write(string value, int info)
         {
             mutex.WaitOne();
+            var baseColor = Console.BackgroundColor;
+            var backColor = info switch
+            {
+                4 => ConsoleColor.Red,
+                _ => baseColor
+            };
             var customColor = info switch
             {
                 0 => ConsoleColor.Blue,
@@ -89,17 +101,20 @@ namespace Infobot
             var code = info switch
             {
                 0 => "INFO",
-                1 => "WARN",
+                1 => "WARNING",
                 2 => "ERROR",
                 3 => "DEBUG",
+                4 => "FATAL",
                 _ => default
             };
             Console.ForegroundColor = ConsoleColor.DarkGray;
             Console.Write($"{DateTime.Now:yyyy/MM/dd HH:mm:ss} ");
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write('[');
+            Console.BackgroundColor = backColor;
             Console.ForegroundColor = customColor;
             Console.Write(code);
+            Console.BackgroundColor = baseColor;
             Console.ForegroundColor = ConsoleColor.White;
             Console.Write("] ");
             bool quoted = false;

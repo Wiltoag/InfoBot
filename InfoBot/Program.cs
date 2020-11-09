@@ -59,8 +59,8 @@ namespace Infobot
                 Logger.Info($"Connected to Discord");
             else
             {
-                Logger.Error($"Failed to connect to Discord");
-                Environment.Exit(0);
+                Logger.Fatal($"Failed to connect to Discord");
+                Environment.Exit(3);
             }
         }
 
@@ -71,48 +71,69 @@ namespace Infobot
         private static async Task Main(string[] args)
         {
             Logger = new Log();
-            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
-            {
-                if (Discord.DisconnectAsync().Wait(Timeout))
-                    Logger.Info("Disconnected");
-            };
-            Timeout = TimeSpan.FromSeconds(15);
-            registeredCommands = new HashSet<ICommand>(new ICommand.Comparer());
-            registeredSetups = new LinkedList<ISetup>();
-            Settings.CurrentSettings = SettingsManager.MostRecent;
-            Client = new HttpClient(new HttpClientHandler()
-            {
-                AllowAutoRedirect = false
-            });
             try
             {
-                using (var sr = new StreamReader("token.txt"))
-                    token = sr.ReadToEnd();
-                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+                AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+                {
+                    if (Discord.DisconnectAsync().Wait(Timeout))
+                        Logger.Info("Disconnected");
+                };
+                Timeout = TimeSpan.FromSeconds(15);
+                registeredCommands = new HashSet<ICommand>(new ICommand.Comparer());
+                registeredSetups = new LinkedList<ISetup>();
+                Settings.CurrentSettings = SettingsManager.MostRecent;
+                Client = new HttpClient(new HttpClientHandler()
+                {
+                    AllowAutoRedirect = false
+                });
+                try
+                {
+                    using (var sr = new StreamReader("token.txt"))
+                        token = sr.ReadToEnd();
+                    Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+                }
+                catch (Exception)
+                {
+                    Console.Write("Token :");
+                    token = Console.ReadLine();
+                    Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+                }
+                Discord.MessageCreated += MessageCreated;
+                RegisterCommands();
+                RegisterSetups();
+                foreach (var setup in registeredSetups)
+                    setup.Setup();
+                Discord.Ready += async (e) =>
+                {
+                    var task = Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status));
+                    if (await Task.WhenAny(task, Task.Delay(Timeout)) == task && task.IsCompletedSuccessfully)
+                        Logger.Info("Status set");
+                    else
+                        Logger.Error("Unable to set status");
+                    foreach (var setup in registeredSetups)
+                        setup.Connected();
+                };
+                Discord.GuildAvailable += (e) =>
+                {
+                    Logger.Info($"'{e.Guild.Name}' available");
+                    return Task.CompletedTask;
+                };
+                Discord.ClientErrored += (e) =>
+                {
+                    Logger.Fatal(e.Exception.InnerException.Message);
+                    Logger.Fatal(e.Exception.InnerException);
+                    Environment.Exit(4);
+                    return Task.CompletedTask;
+                };
+                Connect();
+                await Task.Delay(-1);
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                Console.Write("Token :");
-                token = Console.ReadLine();
-                Discord = new DiscordClient(new DiscordConfiguration() { Token = token, TokenType = TokenType.Bot });
+                Logger.Fatal(e.InnerException.Message);
+                Logger.Fatal(e.InnerException);
+                Environment.Exit(4);
             }
-            Discord.MessageCreated += MessageCreated;
-            RegisterCommands();
-            RegisterSetups();
-            foreach (var setup in registeredSetups)
-                setup.Setup();
-            Discord.Ready += async (e) =>
-             {
-                 var task = Discord.UpdateStatusAsync(new DiscordGame(Settings.CurrentSettings.status));
-                 if (await Task.WhenAny(task, Task.Delay(Timeout)) == task && task.IsCompletedSuccessfully)
-                     Logger.Info("Status set");
-                 else
-                     Logger.Error("Unable to set status");
-                 foreach (var setup in registeredSetups)
-                     setup.Connected();
-             };
-            Connect();
-            await Task.Delay(-1);
         }
 
         private static void RegisterCommands()

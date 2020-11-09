@@ -124,7 +124,7 @@ namespace Infobot
                     }
                 }
                 else
-                    Program.Logger.Error($"No url provided for {index / 2 + 1}.{1 + index % 2}");
+                    Program.Logger.Warning($"No url provided for {index / 2 + 1}.{1 + index % 2}");
             }));
             Program.Logger.Info("Timetables updated");
             SettingsManager.Save(Settings.CurrentSettings);
