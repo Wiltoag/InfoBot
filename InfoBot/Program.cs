@@ -107,7 +107,7 @@ namespace Infobot
                  if (await Task.WhenAny(task, Task.Delay(Timeout)) == task && task.IsCompletedSuccessfully)
                      Logger.Info("Status set");
                  else
-                     Logger.Warning("Unable to set status");
+                     Logger.Error("Unable to set status");
                  foreach (var setup in registeredSetups)
                      setup.Connected();
              };
@@ -183,7 +183,7 @@ namespace Infobot
                                 {
                                     var removeTask = e.Message.DeleteAsync();
                                     if (await Task.WhenAny(removeTask, Task.Delay(Timeout)) != removeTask && !removeTask.IsCompletedSuccessfully)
-                                        Logger.Warning($"Unable to remove the command");
+                                        Logger.Error($"Unable to remove the command");
                                 }
                             }
                             else
@@ -192,7 +192,7 @@ namespace Infobot
                                 await e.Message.RespondAsync("You have to be admin to call this command.");
                             }
                         else
-                            Logger.Warning($"Unable to find member rights");
+                            Logger.Error($"Unable to find member rights");
                     }
                 else
                     await e.Message.RespondAsync($"Unknown command `{args.First.Value}`, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key}` for more informations");

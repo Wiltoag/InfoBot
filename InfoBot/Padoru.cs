@@ -33,10 +33,10 @@ namespace Infobot
                 var sendTask = ev.Message.RespondAsync(
                   embed: new DiscordEmbedBuilder().WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
                 if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)) != sendTask || !sendTask.IsCompletedSuccessfully)
-                    Program.Logger.Warning("Unable to send Padoru");
+                    Program.Logger.Error("Unable to send Padoru");
             }
             else
-                Program.Logger.Warning("Unable to request Padoru");
+                Program.Logger.Error("Unable to request Padoru");
         }
 
         #endregion Public Methods

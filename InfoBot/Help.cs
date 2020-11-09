@@ -42,13 +42,13 @@ namespace Infobot
                         command.Detail?.ForEach(set => embed.AddField($"- `{set.Item1}`", $"{set.Item2}"));
                         var task = ev.Message.RespondAsync(embed: embed);
                         if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                            Program.Logger.Warning($"Unable to send help for '{command.Key}'");
+                            Program.Logger.Error($"Unable to send help for '{command.Key}'");
                     }
                     else
                     {
                         var task = ev.Message.RespondAsync($"Unknown command `{key}`, type `{Settings.CurrentSettings.commandIdentifier}help` for more informations");
                         if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                            Program.Logger.Warning($"Unable to send help for '{command.Key}'");
+                            Program.Logger.Error($"Unable to send help for '{command.Key}'");
                     }
                 }
             }
@@ -93,7 +93,7 @@ namespace Infobot
                 embed.Footer = new DiscordEmbedBuilder.EmbedFooter { Text = $"Use {Settings.CurrentSettings.commandIdentifier}{Help.Key} <command> for more informations about a command." };
                 var task = ev.Message.RespondAsync(embed: embed);
                 if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                    Program.Logger.Warning($"Unable to send help");
+                    Program.Logger.Error($"Unable to send help");
             }
         }
 

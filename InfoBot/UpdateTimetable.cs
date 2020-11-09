@@ -82,13 +82,13 @@ namespace Infobot
                                             if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)) != sendTask || !sendTask.IsCompletedSuccessfully)
                                             {
                                                 error = true;
-                                                Program.Logger.Warning($"Unable to send the week 1 for {index / 2 + 1}.{1 + index % 2}");
+                                                Program.Logger.Error($"Unable to send the week 1 for {index / 2 + 1}.{1 + index % 2}");
                                             }
                                         }
                                         else
                                         {
                                             error = true;
-                                            Program.Logger.Warning($"Unable to get the week 1 for {index / 2 + 1}.{1 + index % 2}");
+                                            Program.Logger.Error($"Unable to get the week 1 for {index / 2 + 1}.{1 + index % 2}");
                                         }
                                     }
                                     {
@@ -101,30 +101,30 @@ namespace Infobot
                                             if (await Task.WhenAny(sendTask, Task.Delay(Program.Timeout)) != sendTask || !sendTask.IsCompletedSuccessfully)
                                             {
                                                 error = true;
-                                                Program.Logger.Warning($"Unable to send the week 2 for {index / 2 + 1}.{1 + index % 2}");
+                                                Program.Logger.Error($"Unable to send the week 2 for {index / 2 + 1}.{1 + index % 2}");
                                             }
                                         }
                                         else
                                         {
                                             error = true;
-                                            Program.Logger.Warning($"Unable to get the week 2 for {index / 2 + 1}.{1 + index % 2}");
+                                            Program.Logger.Error($"Unable to get the week 2 for {index / 2 + 1}.{1 + index % 2}");
                                         }
                                     }
                                     if (!error)
                                         Settings.CurrentSettings.oldHash[index] = newHash;
                                 }
                                 else
-                                    Program.Logger.Warning($"Unable to find {index / 2 + 1}.{1 + index % 2} timetable channel.");
+                                    Program.Logger.Error($"Unable to find {index / 2 + 1}.{1 + index % 2} timetable channel.");
                             }
                             else
                                 Program.Logger.Info($"No differences detected for {index / 2 + 1}.{1 + index % 2}");
                         }
                         else
-                            Program.Logger.Warning("Unable to get the JSON");
+                            Program.Logger.Error("Unable to get the JSON");
                     }
                 }
                 else
-                    Program.Logger.Warning($"No url provided for {index / 2 + 1}.{1 + index % 2}");
+                    Program.Logger.Error($"No url provided for {index / 2 + 1}.{1 + index % 2}");
             }));
             Program.Logger.Info("Timetables updated");
             SettingsManager.Save(Settings.CurrentSettings);
@@ -169,7 +169,7 @@ namespace Infobot
                             {
                                 var task = ev.Message.RespondAsync($"Unknown group `{args[index]}`");
                                 if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompleted)
-                                    Program.Logger.Warning("Unable to respond");
+                                    Program.Logger.Error("Unable to respond");
                             }
                         });
                         await Update(true, groups);
@@ -195,7 +195,7 @@ namespace Infobot
                         {
                             var task = ev.Message.RespondAsync($"Unknown group `{args[index]}`");
                             if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompleted)
-                                Program.Logger.Warning("Unable to respond");
+                                Program.Logger.Error("Unable to respond");
                         }
                     });
                     await Update(false, groups);
@@ -204,7 +204,7 @@ namespace Infobot
             else
                 await Update();
             if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompleted)
-                Program.Logger.Warning("Unable to respond");
+                Program.Logger.Error("Unable to respond");
         }
 
         public void Setup()

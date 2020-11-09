@@ -54,34 +54,34 @@ namespace Infobot
                                                 SettingsManager.Save(Settings.CurrentSettings);
                                                 var task = ev.Message.RespondAsync($"Setting changed");
                                                 if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                                    Program.Logger.Warning("Unable to respond");
+                                                    Program.Logger.Error("Unable to respond");
                                             }
                                             else
                                             {
                                                 var task = ev.Message.RespondAsync($"Unable to change this setting");
                                                 if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                                    Program.Logger.Warning("Unable to respond");
+                                                    Program.Logger.Error("Unable to respond");
                                             }
                                         }
                                         else
                                         {
                                             var task = ev.Message.RespondAsync($"Unknown setting");
                                             if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                                Program.Logger.Warning("Unable to respond");
+                                                Program.Logger.Error("Unable to respond");
                                         }
                                     }
                                     else
                                     {
                                         var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                                         if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                            Program.Logger.Warning("Unable to respond");
+                                            Program.Logger.Error("Unable to respond");
                                     }
                                 }
                                 else
                                 {
                                     var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                                     if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                        Program.Logger.Warning("Unable to respond");
+                                        Program.Logger.Error("Unable to respond");
                                 }
                             }
                             break;
@@ -98,7 +98,7 @@ namespace Infobot
                                         .WithDescription(builder.ToString());
                                     var task = ev.Message.RespondAsync(embed: embed);
                                     if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                        Program.Logger.Warning("Unable to send settings");
+                                        Program.Logger.Error("Unable to send settings");
                                 }
                                 else
                                 {
@@ -115,7 +115,7 @@ namespace Infobot
                                         .WithDescription(builder.ToString());
                                     var task = ev.Message.RespondAsync(embed: embed);
                                     if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                        Program.Logger.Warning("Unable to send settings");
+                                        Program.Logger.Error("Unable to send settings");
                                 }
                             }
                             break;
@@ -124,7 +124,7 @@ namespace Infobot
                             {
                                 var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                                 if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                                    Program.Logger.Warning("Unable to respond");
+                                    Program.Logger.Error("Unable to respond");
                             }
                             break;
                     }
@@ -133,14 +133,14 @@ namespace Infobot
                 {
                     var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                     if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                        Program.Logger.Warning("Unable to respond");
+                        Program.Logger.Error("Unable to respond");
                 }
             }
             else
             {
                 var task = ev.Message.RespondAsync($"Invalid command, type `{Settings.CurrentSettings.commandIdentifier}{Help.Key} {Key}` for more informations");
                 if (await Task.WhenAny(task, Task.Delay(Program.Timeout)) != task || !task.IsCompletedSuccessfully)
-                    Program.Logger.Warning("Unable to respond");
+                    Program.Logger.Error("Unable to respond");
             }
         }
 

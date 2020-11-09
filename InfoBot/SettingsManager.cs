@@ -66,11 +66,11 @@ namespace Infobot
             }
             catch (IOException e)
             {
-                Program.Logger.Warning($"Unable to save settings to '{path}' : {e.Message}");
+                Program.Logger.Error($"Unable to save settings to '{path}' : {e.Message}");
             }
             catch (UnauthorizedAccessException e)
             {
-                Program.Logger.Warning($"Unable to save settings to '{path}' : {e.Message}");
+                Program.Logger.Error($"Unable to save settings to '{path}' : {e.Message}");
             }
         }
 
