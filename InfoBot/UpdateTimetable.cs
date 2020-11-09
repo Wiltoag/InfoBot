@@ -34,7 +34,7 @@ namespace Infobot
 
         public static async Task Update()
         {
-            string regex = Uri.EscapeDataString("/^(.*) - .* - .* - .*$/");
+            string regex = Uri.EscapeDataString("/^(.*) - .* - .* - (.*)$/");
             await Task.WhenAll(Settings.CurrentSettings.timetableUrls.Select(async (url, index) =>
             {
                 if (url.Length > 0)
