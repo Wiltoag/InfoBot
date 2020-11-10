@@ -24,9 +24,19 @@ namespace Infobot
         public string commandIdentifier;
 
         /// <summary>
+        /// Delay before a custom room is deleted
+        /// </summary>
+        public TimeSpan? customRoomDelay;
+
+        /// <summary>
         /// Last value of the hashcode of the timetables
         /// </summary>
         public int[] oldHash;
+
+        /// <summary>
+        /// Id of the private room channels category
+        /// </summary>
+        public ulong? privateRooms;
 
         /// <summary>
         /// The current status used by the bot
@@ -65,7 +75,9 @@ namespace Infobot
                     timetableUrls = new string[] { "", "", "", "", "", "" },
                     timetableChannels = new ulong[] { 0, 0, 0, 0, 0, 0 },
                     timetableDelay = TimeSpan.FromHours(2),
-                    commandIdentifier = "$"
+                    commandIdentifier = "$",
+                    customRoomDelay = TimeSpan.FromMinutes(20),
+                    privateRooms = 0
                 };
                 result.status = $"{result.commandIdentifier}{Help.Key}";
                 return result;
@@ -132,14 +144,35 @@ namespace Infobot
 
                     { "status", (() => status, value => {
                         var task = Program.Discord.UpdateStatusAsync(new DSharpPlus.Entities.DiscordGame(value));
-                        if (Task.WhenAny(task, Task.Delay(Program.Timeout)).Result == task && task.IsCompletedSuccessfully)
+                        if (task.TimeoutTask().Result)
                         {
                             status = value;
                             return true;
                         }
                         else
                             return false;
-                    }) }
+                    }) },
+
+                    { "room-delay", (() => customRoomDelay.ToString(), value => {
+                        if (TimeSpan.TryParse(value, out TimeSpan parsed))
+                        {
+                            customRoomDelay = parsed;
+                            return true;
+                        }
+                        else
+                            return false;
+                    }) },
+                    { "room-category", (() => privateRooms.ToString(), value =>
+                    {
+                        if (ulong.TryParse(value, out ulong parsed))
+                        {
+                            privateRooms = parsed;
+                            return true;
+                        }
+                        else
+                            return false;
+                        }
+                    ) }
                 };
 
                 return result;
@@ -185,6 +218,16 @@ namespace Infobot
             {
                 Program.Logger.Warning("Missing Settings.timetableChannels");
                 timetableChannels = defaultSettings.timetableChannels;
+            }
+            if (customRoomDelay == null)
+            {
+                Program.Logger.Warning("Missing Settings.customRoomDelay");
+                customRoomDelay = defaultSettings.customRoomDelay;
+            }
+            if (privateRooms == null)
+            {
+                Program.Logger.Warning("Missing Settings.privateRooms");
+                privateRooms = defaultSettings.privateRooms;
             }
         }
 

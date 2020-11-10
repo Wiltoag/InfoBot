@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Timers;
 using DSharpPlus;
 using DSharpPlus.Entities;
 using DSharpPlus.EventArgs;
@@ -20,6 +21,7 @@ namespace Infobot
         #region Private Fields
 
         private static string token;
+
         public static ICollection<ICommand> registeredCommands { get; private set; }
         private static ICollection<ISetup> registeredSetups;
 

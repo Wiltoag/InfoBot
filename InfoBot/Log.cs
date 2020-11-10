@@ -43,7 +43,7 @@ namespace Infobot
         /// Special log type used to debug stuff
         /// </summary>
         /// <param name="value">object to print</param>
-        public void Debug(object value) => Write(value.ToString(), 3);
+        public void Debug(object value) => Write(value == null ? "null" : value.ToString(), 3);
 
         /// <summary>
         /// Dispose this instance of Log, closing the files
@@ -57,25 +57,25 @@ namespace Infobot
         /// Error log type. Used when something wrong happened
         /// </summary>
         /// <param name="value">object to print</param>
-        public void Error(object value) => Write(value.ToString(), 2);
+        public void Error(object value) => Write(value == null ? "null" : value.ToString(), 2);
 
         /// <summary>
         /// Fatal log type. Used when the program stops
         /// </summary>
         /// <param name="value">object to print</param>
-        public void Fatal(object value) => Write(value.ToString(), 4);
+        public void Fatal(object value) => Write(value == null ? "null" : value.ToString(), 4);
 
         /// <summary>
         /// Info log type. Used to display
         /// </summary>
         /// <param name="value"></param>
-        public void Info(object value) => Write(value.ToString(), 0);
+        public void Info(object value) => Write(value == null ? "null" : value.ToString(), 0);
 
         /// <summary>
         /// Warning log type. Used when something requires attention
         /// </summary>
         /// <param name="value"></param>
-        public void Warning(object value) => Write(value.ToString(), 1);
+        public void Warning(object value) => Write(value == null ? "null" : value.ToString(), 1);
 
         #endregion Public Methods
 
