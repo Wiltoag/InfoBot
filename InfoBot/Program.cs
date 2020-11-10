@@ -80,6 +80,11 @@ namespace Infobot
                     if (Discord.DisconnectAsync().Wait(Timeout))
                         Logger.Info("Disconnected");
                 };
+                Console.CancelKeyPress += (sender, e) =>
+                {
+                    if (Discord.DisconnectAsync().Wait(Timeout))
+                        Logger.Info("Disconnected");
+                };
                 Timeout = TimeSpan.FromSeconds(15);
                 registeredCommands = new HashSet<ICommand>(new ICommand.Comparer());
                 registeredSetups = new LinkedList<ISetup>();
