@@ -22,11 +22,14 @@ namespace Infobot
 
         public bool Admin => false;
 
-        public IEnumerable<(string, string)> Detail => null;
+        public IEnumerable<(string, string)> Detail => new (string, string)[] {
+            ($"`{Settings.CurrentSettings.commandIdentifier}{Key} [<role/user mentions>...]`",
+            $"Creates a voice & text channels for the listed roles/users, including the author. Deleted after {Settings.CurrentSettings.customRoomDelay} when nobody is in the voice chat.")
+        };
 
         public string Key => "room";
 
-        public string Summary => "";
+        public string Summary => "Creates custom temporary rooms for only certain people. Deletes itself after a timeout that starts when nobody is in the chat";
 
         #endregion Public Properties
 
