@@ -153,8 +153,11 @@ namespace Infobot
             .Where(type => type.ImplementedInterfaces.Contains(typeof(ISetup)))
             .ForEach(type =>
             {
-                var setup = type.GetConstructor(new Type[0]).Invoke(null) as ISetup;
-                registeredSetups.Add(setup);
+                ISetup setup;
+                if (type.ImplementedInterfaces.Contains(typeof(ICommand)))
+                    registeredSetups.Add(setup = registeredCommands.First(c => c.GetType() == type) as ISetup);
+                else
+                    registeredSetups.Add(setup = type.GetConstructor(new Type[0]).Invoke(null) as ISetup);
                 Logger.Info($"Setup '{setup.GetType()}' registered");
             });
 

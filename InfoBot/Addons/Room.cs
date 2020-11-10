@@ -14,7 +14,7 @@ namespace Infobot
     {
         #region Private Fields
 
-        private static Dictionary<DiscordChannel, (DiscordChannel, Timer)> rooms;
+        private Dictionary<DiscordChannel, (DiscordChannel, Timer)> rooms;
 
         #endregion Private Fields
 
