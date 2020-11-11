@@ -79,7 +79,7 @@ namespace Infobot
                                             var response = getTask.Result;
                                             var sendTask = channel.SendMessageAsync(embed: new DiscordEmbedBuilder().WithTitle("Emploi du temps semaine en cours")
                                             .WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
-                                            if (await sendTask.TimeoutTask())
+                                            if (!await sendTask.TimeoutTask())
                                             {
                                                 error = true;
                                                 Program.Logger.Error($"Unable to send the week 1 for {index / 2 + 1}.{1 + index % 2}");
@@ -98,7 +98,7 @@ namespace Infobot
                                             var response = getTask.Result;
                                             var sendTask = channel.SendMessageAsync(embed: new DiscordEmbedBuilder().WithTitle("Emploi du temps semaine prochaine")
                                             .WithImageUrl($"{Program.WildgoatApi}/{response.Headers.Location}"));
-                                            if (await sendTask.TimeoutTask())
+                                            if (!await sendTask.TimeoutTask())
                                             {
                                                 error = true;
                                                 Program.Logger.Error($"Unable to send the week 2 for {index / 2 + 1}.{1 + index % 2}");
