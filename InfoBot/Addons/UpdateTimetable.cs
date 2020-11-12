@@ -45,7 +45,7 @@ namespace Infobot
                 Settings.CurrentSettings.timetableUrls.ForEach((u, index) => list.Add(index));
                 groups = list.ToArray();
             }
-            string regex = Uri.EscapeDataString("/^(.*) ?- ?.* ?- ?.* ?- ?(.*)$/");
+            string regex = Uri.EscapeDataString("/^(.*) ?- ?.* ?- ?.* ?- ?.* ?- ?(.*)$/");
             await Task.WhenAll(Settings.CurrentSettings.timetableUrls
                 .Where((u, index) => groups.Contains(index))
                 .Select(async (url, index) =>
